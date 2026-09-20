@@ -1,6 +1,6 @@
 name: GlassesBridge
 options:
-  bundleIdPrefix: com.buildersystem
+  bundleIdPrefix: com.dojo
   deploymentTarget:
     iOS: "17.2"   # floor set by the MWDAT frameworks
   createIntermediateGroups: true
@@ -72,7 +72,7 @@ targets:
           NSAllowsLocalNetworking: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.buildersystem.glassesbridge
+        PRODUCT_BUNDLE_IDENTIFIER: com.dojo.glassesbridge
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
 
@@ -85,7 +85,7 @@ targets:
       - target: GlassesBridge
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.buildersystem.glassesbridge.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.dojo.glassesbridge.tests
         GENERATE_INFOPLIST_FILE: "YES"
 
 schemes:

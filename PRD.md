@@ -1,4 +1,4 @@
-# Reality Compiler — PRD & Technical Architecture
+# Dojo — PRD & Technical Architecture
 
 **Status:** v1.2, hackathon build spec (HackMIT 2026). **Implementation status is tracked in `README.md`.**
 **Scope decisions (v1.2):** the Ray-Ban Meta glasses are the primary input for the whole session; Dropbox is the content layer (see `docs/dropbox-integration.md`). Dropped from scope: Arduino UNO Q hardware verification and webcam source, ASUS/local-VLM hardware, voice vendors, multiplayer rooms, LLM cost-saving write-ups. Code for the UNO Q probe agent remains in `services/unoq-agent` but is parked and not part of the plan.
