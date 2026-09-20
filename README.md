@@ -1,4 +1,4 @@
-# Reality Compiler
+# Dojo
 
 Point a camera at a pile of parts → see what you can build → follow a generated, scrollable, step-by-step guide that adapts to missing parts and verifies as you build. Domains: **LEGO**, **breadboard electronics**, **fabric scraps**.
 

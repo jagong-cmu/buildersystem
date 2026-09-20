@@ -13,7 +13,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Reality Compiler",
+  title: "Dojo",
   description: "Instructions generated from the parts you actually have.",
 };
 
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <RemoteNav />
         <header className="flex items-center flex-wrap gap-x-4 gap-y-2 px-5 py-3 border-b" style={{ borderColor: "var(--line)" }}>
           <Link href="/" className="font-semibold tracking-tight">
-            Reality Compiler
+            Dojo
           </Link>
           <nav className="flex flex-wrap gap-3 text-sm muted">
             <Link href="/scan">Scan</Link>

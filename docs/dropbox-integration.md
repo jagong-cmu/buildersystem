@@ -50,7 +50,7 @@ Dropbox "App folder" access type → all paths are relative to `/Apps/<AppName>/
 
 ## 4. Auth and setup (human does this once, agent documents it)
 
-1. Create an app at the Dropbox App Console: **Scoped access**, **App folder**, name it (e.g. "Reality Compiler").
+1. Create an app at the Dropbox App Console: **Scoped access**, **App folder**, name it (e.g. "Dojo").
 2. Permissions tab: `account_info.read`, `files.metadata.read`, `files.metadata.write`, `files.content.read`, `files.content.write`, `sharing.write`. Submit.
 3. Settings tab: add redirect URI `http://localhost:3000/api/dropbox/callback`. Note the **App key** and **App secret**.
 4. Env (`apps/web/.env.local`):

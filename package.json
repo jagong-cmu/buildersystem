@@ -1,5 +1,5 @@
 {
-  "name": "reality-compiler",
+  "name": "dojo",
   "private": true,
   "packageManager": "pnpm@11.7.0",
   "scripts": {
