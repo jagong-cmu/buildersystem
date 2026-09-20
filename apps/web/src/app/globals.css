@@ -64,7 +64,7 @@ html { scroll-behavior: smooth; }
 @media (max-width: 640px) { .tally { top: 4rem; width: 11rem; max-height: 40%; } .tally-list { padding-bottom: .35rem; } }
 .live-pip { position: absolute; right: 1rem; top: 4rem; width: 22rem; max-width: 45%; z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
 .live-expanded { position: absolute; right: 1rem; top: 4rem; width: min(56rem, calc(100% - 20rem)); max-height: calc(100% - 16rem); z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
-@media (max-width: 640px) { .live-expanded { left: 1rem; right: 1rem; width: auto; } }
+@media (max-width: 640px) { .live-expanded { left: 1rem; right: 1rem; width: auto; } .tally.feed-open { display: none; } }
 @media (max-width: 480px) { .tally { width: min(11rem, calc(52% - 1.5rem)); } }
 
 .dot { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; margin-left: .35rem; background: var(--muted); }

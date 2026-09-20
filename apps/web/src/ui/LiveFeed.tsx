@@ -103,7 +103,7 @@ export function LiveFeed({
           </div>
         )}
         {compact && current && (
-          <span className={`absolute left-2 top-2 chip ${showFeed ? "ok" : "warn"}`} style={{ backdropFilter: "blur(6px)" }}>
+          <span className={`absolute left-2 bottom-2 chip ${showFeed ? "ok" : "warn"}`} style={{ backdropFilter: "blur(6px)" }}>
             {current.kind} · {showFeed ? `${current.fps.toFixed(0)} fps` : "offline"}
           </span>
         )}

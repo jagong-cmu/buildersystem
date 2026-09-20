@@ -429,7 +429,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       )}
 
       {/* Parts tally: counts down as steps place parts */}
-      <aside className={`tally panel${tallyOpen ? "" : " collapsed"}`} aria-label="parts remaining">
+      <aside className={`tally panel${tallyOpen ? "" : " collapsed"}${live && feedExpanded ? " feed-open" : ""}`} aria-label="parts remaining">
         <button className="tally-head" onClick={() => setTallyOpen((o) => !o)} aria-expanded={tallyOpen}>
           <span className="font-medium">Parts</span>
           <span className="chip">{partsLeft} left</span>
