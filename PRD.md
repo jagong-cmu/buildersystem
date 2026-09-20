@@ -1,6 +1,7 @@
 # Reality Compiler — PRD & Technical Architecture
 
-**Status:** v1.1, hackathon build spec (HackMIT 2026). **Implementation status is tracked in `README.md`** (M0 and most of M1–M2 are done; see the checklist there before starting).
+**Status:** v1.2, hackathon build spec (HackMIT 2026). **Implementation status is tracked in `README.md`.**
+**Scope decisions (v1.2):** the Ray-Ban Meta glasses are the primary input for the whole session; Dropbox is the content layer (see `docs/dropbox-integration.md`). Dropped from scope: Arduino UNO Q hardware verification and webcam source, ASUS/local-VLM hardware, voice vendors, multiplayer rooms, LLM cost-saving write-ups. Code for the UNO Q probe agent remains in `services/unoq-agent` but is parked and not part of the plan.
 **Audience:** an autonomous coding agent (and the team) building this project from an empty repo.
 **How to use this document:** read it top to bottom once, then execute the Milestones in §19 in order. Every design decision needed to start is made here; open decisions are listed in §21 with defaults. Do not widen scope beyond §2.
 
@@ -8,34 +9,34 @@
 
 ## 1. Summary
 
-**One line:** Point a camera (Meta Ray-Ban glasses, phone, or webcam) at a pile of parts; the system identifies the parts, tells you what you can build from a library of manuals, and generates an interactive, scrollable, step-by-step visual guide that adapts when a part is missing and verifies your progress as you build.
+**One line:** You have leftover parts and don't know what to make. Wearing Ray-Ban Meta glasses, you look at the pile; the system identifies the parts, tells you what you can build from a library of manuals, and walks you through an interactive, scrollable, step-by-step visual guide that adapts when a part is missing and verifies your progress as you build.
 
 **Pitch line:** *Traditional instructions assume you have the right pieces. We generate instructions from the pieces you actually have.*
 
 **Domains (fixed for this build):**
 1. **LEGO** — bricks/plates
-2. **Breadboard electronics** — Arduino + jumper wires + discrete components
+2. **Breadboard electronics** — an Uno-format microcontroller board + jumper wires + discrete components
 3. **Fabric scraps** — cotton/denim/fleece offcuts + notions (zipper, cord, elastic)
 
 **What makes this different from Brickit (LEGO-only, retrieval + set instructions):**
 - Cross-domain: one core, three domains, adding a fourth is a folder.
 - The guide is *generated* from a structured manual (3D/2D renderer, scroll-driven animation), not a PDF.
 - Near-miss handling: "you are one 220Ω short → use two 100Ω in series," with the guide re-generated from the substitution.
-- Verification: vision (before/after) and, for breadboard, **electrical self-test on the Arduino UNO Q**.
-- Hands-free: continuous video from Meta Ray-Ban glasses, voice narration back to the glasses.
+- Verification: vision (before/after) from the wearer's own view.
+- Hands-free: the glasses are the camera for the whole session; narration is spoken back into the glasses; verification triggers itself when the hands leave the frame.
 
 ---
 
 ## 2. Goals and non-goals
 
 ### Goals (must ship)
-- G1. Inventory from a photo **or a continuous video stream** (glasses → phone bridge → stream hub → web app).
+- G1. Inventory from the glasses' continuous video (glasses → phone bridge → stream hub → web app), filling in as the wearer looks around; photo upload as a fallback.
 - G2. "Possible builds" screen: buildable now / buildable with substitutions / missing parts, per domain.
 - G3. Scrollable step-by-step guide with a sticky animated viewport (LEGO 3D, breadboard 2D, fabric 2D).
 - G4. Substitution engine (small, deterministic rules per domain).
-- G5. Step verification: vision verifier for all domains; hardware probe verifier for breadboard on UNO Q.
+- G5. Step verification: vision verifier for all domains, auto-triggered from the glasses feed.
 - G6. Cherry-picked manual library: 3 manuals per domain, sharing physical parts the team owns.
-- G7. Source-agnostic observation layer: glasses, phone PWA camera, UNO Q USB webcam, all through one protocol.
+- G7. Source-agnostic observation layer: glasses (primary) and phone PWA camera (fallback), through one protocol.
 
 ### Non-goals (do not build)
 - Ingesting arbitrary PDF manuals into 3D. Manuals are authored files (§10).
@@ -54,7 +55,7 @@
 1. Wearer looks at the table. Laptop "Live" panel shows the glasses feed. Wearer taps **Scan** on the phone (or says "scan"). Inventory strip fills in: `8 × 2x4 brick (red)`, `4 × 2x2 (blue)` …
 2. **Possible builds** screen: three cards. Two "Buildable now", one "Missing 1 × 220Ω — substitute 2 × 100Ω in series".
 3. Pick one. **Guide** opens. Scroll: each step card activates, the sticky viewport ghosts what's built and flies the new part into place. Judges can grab the mouse and rotate.
-4. Wearer builds step 3. Taps **Check** (or says "check"). Card shows ✓ verified. For breadboard: the UNO Q probes A0 and the badge says "✓ LDR divider reads 512 (expected 100–900)".
+4. Wearer builds step 3 and takes their hands away. The card shows ✓ verified and the wearer hears "Verified" in the glasses (or taps **Check** on the phone).
 5. Hide a part. Say "I don't have the 2x4." Banner: **Plan updated from step 7** — remaining steps re-render with two 2x2s.
 6. Switch domain (fabric): scan scraps, "zipper pouch fits on scrap 2," scroll the cut layout and sewing steps. Same app, same UI.
 
@@ -64,15 +65,15 @@ Payoffs: phone stands on the LEGO stand; LED lights when the LDR is covered; ear
 
 ## 4. Users and positioning
 
-- Primary: hobbyists, kids' parents, sewists, makers — people who don't use AI tools. **The AI is invisible; the artifact is a manual.** (Targets the "Convince a Non-Believer" track.)
-- Secondary: makerspaces and classrooms (Arduino "Touch Grass" track).
+- Primary: hobbyists, kids' parents, sewists, makers — people with a drawer of leftover parts who don't use AI tools. **The AI is invisible; the artifact is a manual.**
+- Secondary: makerspaces and classrooms.
 
 ---
 
 ## 5. Screens and flows
 
 ### 5.1 `/` — Start
-Domain picker (LEGO / Breadboard / Fabric), observation source status (glasses / phone / UNO Q webcam: connected, fps), buttons: **Scan**, **Open builds**.
+Domain picker (LEGO / Breadboard / Fabric), glasses status (connected, fps; phone fallback), buttons: **Scan**, **Open builds**.
 
 ### 5.2 `/scan` — Inventory
 ```
@@ -124,16 +125,17 @@ Sources, fps, last 5 frames, probe log, VLM call log. Not shown to judges but es
 OBSERVATION SOURCES                           STREAM HUB (Node, ws)                    WEB APP (Next.js)
 ┌──────────────────────┐   ws /produce        ┌──────────────────────┐   ws /consume   ┌───────────────────────────┐
 │ Glasses bridge (phone)│──────────────────►  │ per-source ring buf  │ ───────────────►│ Live panel, PiP           │
-│ Phone PWA camera      │──────────────────►  │ (30 s of JPEG frames)│   GET /frames   │ Inventory service (VLM)   │
-│ UNO Q USB webcam      │──────────────────►  │ control bus (JSON)   │◄───────────────►│ Verification worker       │
-└──────────────────────┘   ws /control        └──────────────────────┘                 │ Matcher · Guide · Renderers│
-                                                        ▲                              └───────────────────────────┘
-UNO Q hardware probe (Python on board) ── HTTP ─────────┘  probe jobs / results
+│   PRIMARY             │                     │ (30 s of JPEG frames)│   GET /frames   │ Inventory service (VLM)   │
+│ Phone PWA camera      │──────────────────►  │ control bus (JSON)   │◄───────────────►│ Verification worker       │
+│   fallback            │   ws /control       │ motion detector      │                 │ Matcher · Guide · Renderers│
+└──────────────────────┘                      └──────────────────────┘                 └───────────────────────────┘
+                                                                                                 ▲
+Dropbox (manual library in, build records out) ── docs/dropbox-integration.md ───────────────────┘
 ```
 
 Principles:
 - **Everything domain-specific lives behind `DomainPlugin`** (§15). Core never branches on domain.
-- **Observation sources are interchangeable** producers on one protocol (§8). The UI doesn't know whether frames come from glasses or a laptop webcam.
+- **Observation sources are interchangeable** producers on one protocol (§8). The glasses are the default and primary source; the phone PWA is the fallback. The UI prefers an online glasses source automatically.
 - **Manual files are the single source of truth.** `requires` and steps are derived, never hand-listed.
 - **Verification is an event bus.** Vision and hardware verifiers post results; the guide subscribes.
 - **Everything runs on one laptop + LAN** during the demo (laptop hotspot). Vercel deploy is optional for a judges' link with recorded assets.
@@ -161,11 +163,11 @@ Minimal native app built from Meta's sample app:
 Default platform: whichever phone a teammate owns; the iOS route needs Xcode on the Mac (available), the Android route avoids provisioning friction. Pick one, don't build both.
 
 ### 7.3 Fallbacks (build these first; the glasses plug into the same slot)
-1. **Phone PWA camera** (`/source/phone` route in the web app): `getUserMedia`, canvas → JPEG, same WebSocket protocol. Works on any phone in 30 minutes. This is the primary source until the glasses bridge is proven.
-2. **UNO Q USB webcam**: Python on the board's Linux side reads the UVC camera and produces frames on the same protocol (also satisfies the Arduino track).
+1. **Glasses simulator** (`services/stream-hub/scripts/glasses-sim.mts`): replays a folder of JPEGs as source `glasses` so every glasses-first screen is testable without hardware; the hub recorder dumps a real session for replay (also the stage backup).
+2. **Phone PWA camera** (`/source/phone` route in the web app): `getUserMedia`, canvas → JPEG, same WebSocket protocol. The on-stage fallback if the glasses fail.
 3. **Laptop webcam** via the same PWA route.
 
-Every demo screen must work with source (1) alone.
+Every demo screen must work with sources (1) and (2).
 
 ---
 
@@ -331,14 +333,13 @@ Shared contract: `<Renderer manual step direction onSnapshot />`. Must support: 
 ### 14.1 Step state machine
 `pending → armed (card active) → checking → verified | mismatch(hint) → armed` — plus a manual **Mark done** override that always works.
 
-### 14.2 Hardware probe verifier (breadboard, on Arduino UNO Q)
-- UNO Q = Qualcomm QRB2210 (Linux, Debian, Wi-Fi) + STM32U585 MCU. **App Lab** runs Python on Linux and a sketch on the MCU with an RPC bridge between them (see App Lab docs for the Linux↔MCU call mechanism).
-- `services/unoq-agent` (Python, on the board): polls `GET /probe/jobs?board=<id>` on the hub, executes each `Probe` via the MCU sketch, posts `{jobId, pin, mode, value}` to `/probe/results`.
-- MCU sketch: generic probe firmware exposing `analogRead(pin)`, `digitalRead(pin, pullup)`, `pulse(pin, ms)`; loads the manual's target sketch only when the build is complete (final step).
-- Verifier compares to `expect` ranges → `verify.result`. Example: after the LDR step, `A0 ∈ [100, 950]` verifies the divider; a pulse on `D9` + vision confirms the LED blinked.
-
-### 14.3 Vision verifier (all domains)
+### 14.2 Vision verifier (all domains; the only verifier in scope)
 Inputs: `expected.description`, `expected.image` (renderer snapshot), `before` frame (at card activation), `after` frame (on `check` or on `motion.settled` following `motion.active`). One VLM call → `{ status: 'verified'|'mismatch'|'unsure', conf, hint }`. `unsure` never blocks; show "couldn't confirm — mark done?".
+
+With the glasses as the primary source, verification is **auto-triggered**: when a step is armed and the hub reports motion.active followed by motion.settled (hands left the frame), the verifier runs (debounced, at most once per 10 s per step, off switch in the header). On verified, the guide auto-advances after a spoken 3 s countdown; on mismatch, the hint is spoken.
+
+### 14.3 Parked: hardware probe verifier
+`services/unoq-agent` and the hub's `/probe/*` queue implement an electrical self-test for breadboard builds on a microcontroller. This is **out of scope for the plan** (no board in the demo); the breadboard verifier route falls back to vision. Leave the code in place; do not extend it.
 
 ---
 
@@ -415,26 +416,26 @@ Env: `AI_GATEWAY_API_KEY` | `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_HUB_WS=ws://<lapto
 
 Scripts: `pnpm dev` (web + hub concurrently), `pnpm manuals:index` (parse all manuals → `manuals.index.json`, fails on parse errors), `pnpm test` (parsers, matcher, substitution rules — these three must have tests).
 
-Conventions: no database; no global state beyond the hub; every domain-specific line of code lives under `src/domains/<id>/`; the demo must run with the phone PWA source alone.
+Conventions: no database; no global state beyond the hub; every domain-specific line of code lives under `src/domains/<id>/`; the demo must run with the glasses simulator alone and with the phone PWA source alone.
 
 ---
 
-## 17. Sponsor track integrations
+## 17. Integrations in scope
 
-| Track | Decision | Implementation |
+| Integration | Status | Notes |
 |---|---|---|
-| **Arduino — Touch Grass** (UNO Q 4GB boards provided) | **Core.** | UNO Q is the breadboard target board, the **hardware verifier** (§14.2), and an optional observation source (USB webcam on the Linux side → hub). |
-| **Convince a Non-Believer** | **Core narrative.** | No chatbot anywhere in the UI. Output is a manual. Say it in the pitch. |
-| **Effortless Commerce** | **Feature, 2 h.** | `plugin.commerce(missing)`: LEGO → BrickLink wanted-list XML download; breadboard → Digi-Key/Adafruit search links; fabric → notions retailer links. Button label: **Shop the gap**. |
-| **ASUS — Build What's Next** | **Conditional.** | If Ascent GX10 (or similar local-AI) hardware is on-site, run an open-weight VLM locally as an alternate `inventory` provider (env switch) for the hardware+software bonus and a privacy story. Their Zenni Claw agent product has no obvious integration surface — ask at the booth; do not build on it. |
-| Autonomous Finance, Time-Based Health Data | **Skip.** | — |
+| **Ray-Ban Meta glasses** | Core (§7) | Primary camera for the whole session; narration into the glasses via the phone bridge. |
+| **Dropbox** | In progress | Manual library in, build records out, photos → inventory. Spec: `docs/dropbox-integration.md`. |
+| **Shop the gap** | Done | `plugin.commerce(missing)`: BrickLink wanted list (LEGO), Adafruit search (breadboard), notions retailer (fabric). A feature, not a sponsor track. |
+
+Everything else that was discussed (Arduino UNO Q, ASUS, Deepgram/ElevenLabs voice vendors, Elasticsearch, Dimensional, The Token Company, Visa, multiplayer rooms) is **out of scope**. Do not add sponsor-specific code paths.
 
 ---
 
 ## 18. Demo assets to prepare (physical + digital)
 
 - LEGO: the chosen set/bricks (≤ 8 part types, ≤ 3 colors), 3 manuals authored in Studio, part reference photos on the marker mat.
-- Breadboard: UNO Q, breadboard, red + green LED, 220Ω ×1, 100Ω ×2, 10kΩ ×1, LDR, button, 10 jumpers; 3 manuals; sketches; labeled bins.
+- Breadboard: an Uno-format board (any Uno R3/R4 or compatible), half-size breadboard, red + green LED, 220Ω ×1, 100Ω ×2, 10kΩ ×1, LDR, button, 10 jumpers; 3 manuals; sketches; labeled bins.
 - Fabric: 3 cotton scraps (roughly rectangular), 1 fleece scrap (deliberately unsuitable), 18 cm zipper, 1 m cord, thread, scissors; the object to hold (earbuds case); 3 manuals.
 - Printed **marker mat** (A3, 4 ArUco markers), plain dark tablecloth.
 - Laptop hotspot; phone with the bridge app; glasses charged and paired; spare phone running the PWA source.
@@ -453,15 +454,15 @@ Conventions: no database; no global state beyond the hub; every domain-specific 
 **M2 — Observation + inventory (h8–14).** Stream hub, phone PWA source, `/scan` with live feed, VLM inventory (photo + 10 s scan), editable strip, `/live` debug.
 *Accept:* from a phone pointed at the LEGO pile, the inventory is within ±1 per part type on 3 of 3 trials on the marker mat.
 
-**M3 — Breadboard + verification (h14–20).** Breadboard plugin (loader, subs from E12 math, wokwi renderer), UNO Q agent + probe firmware, hardware verifier, vision verifier for LEGO, step state machine + badges, replan banner.
-*Accept:* night-light manual verifies the LDR step via A0 on the real board; hiding the 220Ω yields the series-100Ω substitution and re-rendered steps.
+**M3 — Breadboard + verification (h14–20).** Breadboard plugin (loader, subs from E12 math, SVG renderer), vision verifier, step state machine + badges, replan banner.
+*Accept:* hiding the 220Ω yields the series-100Ω substitution and re-rendered steps; a verified step shows the badge with a hint.
 
-**M4 — Glasses + fabric (h20–26).** Glasses bridge streaming to the hub at ≥ 5 fps with Scan/Check/Next/Prev buttons and TTS narration; fabric plugin (loader, rect nesting feasibility, cut-layout + assembly SVG).
-*Accept:* wearer scans, picks a build, hears "Step 1: …" in the glasses; fabric pouch shows nested pieces on the scanned scraps.
+**M4 — Glasses as the core (h20–26).** Glasses simulator + glasses-first web experience (primary-source selection, continuous inventory with detection overlay, hands-free auto-verify, narration), then the native bridge app streaming at ≥ 5 fps with Scan/Check/Next/Prev buttons and TTS. Fabric plugin (loader, rect nesting feasibility, cut-layout + assembly SVG).
+*Accept:* with the simulator, scan → builds → guide → verify runs with no clicks after the guide opens; on hardware, the wearer scans, picks a build, hears "Step 1: …" in the glasses.
 
-**M5 — Polish + commerce + rehearsal (h26–32).** Shop-the-gap links, empty/error states, fallback switches (source, model provider), demo assets, three full rehearsals, recorded backup video.
+**M5 — Dropbox + polish + rehearsal (h26–32).** Dropbox Phases A–C per `docs/dropbox-integration.md`, shop-the-gap links, empty/error states, fallback switches (source, model provider), demo assets, three full rehearsals, recorded backup video.
 
-**M6 — Buffer (h32–36).** Stretch only if M0–M5 are solid: fabric cut-line overlay on the scan frame, voice commands, local VLM on ASUS hardware.
+**M6 — Buffer (h32–36).** Stretch only if M0–M5 are solid: fabric cut-line overlay on the scan frame, on-phone voice commands, state estimation on join.
 
 ---
 
@@ -469,10 +470,9 @@ Conventions: no database; no global state beyond the hub; every domain-specific 
 
 | Risk | Mitigation |
 |---|---|
-| Glasses SDK access (registration, country, preview limits) or Bluetooth bandwidth | Phone PWA source first; glasses are an adapter. Mock Device Kit for dev. Cap at 10 fps. |
+| Glasses SDK access (registration, country, preview limits) or Bluetooth bandwidth | Glasses simulator for all web work; Mock Device Kit for the bridge; phone PWA as the on-stage fallback. Cap at 10 fps. |
 | VLM misclassifies parts | Small vocabulary, reference images in prompt, marker mat + plain background, editable inventory, max-not-sum aggregation. |
-| Breadboard vision too small for the glasses camera | Hardware probe is the primary verifier for breadboard; vision only confirms the LED. |
-| UNO Q setup time (App Lab, Wi-Fi, RPC) | One person owns it from M3 start; generic probe firmware written before the board arrives; agent can be run on a laptop with a plain Uno + serial as a fallback. |
+| Breadboard vision too small for the glasses camera | Verify at the end state (LED on / off) rather than per wire; the wearer leans in; Mark done always works. |
 | LDraw library size / loader quirks | Vendor only the needed parts; instance parts yourself (§13.1). |
 | Scroll jank | Throttle step activation (one transition in flight), `requestAnimationFrame` tweens, memoized geometry. |
 | Demo network | Everything on the laptop hotspot; no cloud dependency except the VLM call; local VLM or cached inventories as a last resort. |
@@ -484,7 +484,7 @@ Conventions: no database; no global state beyond the hub; every domain-specific 
 
 1. Glasses bridge platform: **the phone the team owns**; iOS if a Mac with Xcode is at the table, else Android.
 2. LEGO source: **Creator 3-in-1 set the team owns** (OMR or Studio recreation); else 3 Studio-authored models.
-3. Vision provider: **`anthropic/claude-sonnet-5` via AI Gateway**; direct Anthropic key as fallback; local VLM only if ASUS hardware is present.
+3. Vision provider: **`anthropic/claude-sonnet-5` via AI Gateway**; direct provider keys as fallback.
 4. Deploy: **local laptop for the demo**; optional Vercel deploy of `apps/web` with recorded frames for a judges' link.
 5. Color handling for LEGO matching: **color-agnostic by default**, chip shows the swap.
 
@@ -492,15 +492,12 @@ Conventions: no database; no global state beyond the hub; every domain-specific 
 
 ## 22. References
 
-- Arduino UNO Q: https://docs.arduino.cc/hardware/uno-q · https://store-usa.arduino.cc/products/uno-q-4gb
 - Meta Wearables Device Access Toolkit: https://developers.meta.com/blog/introducing-meta-wearables-device-access-toolkit/ · https://developers.meta.com/wearables/faq/ · https://github.com/facebook/meta-wearables-dat-ios · https://github.com/facebook/meta-wearables-dat-android · docs: https://wearables.developer.meta.com/docs/develop/
 - LDraw: https://library.ldraw.org · three.js LDraw example: https://threejs.org/examples/webgl_loader_ldraw.html
 - BrickLink Studio instructions maker: https://studiohelp.bricklink.com/hc/en-us/articles/5626403887511
-- Wokwi elements: https://github.com/wokwi/wokwi-elements
 - Rebrickable downloads (if a larger LEGO vocabulary is ever needed): https://rebrickable.com/downloads/
 - FreeSewing (optional fabric designs): https://freesewing.org
 - SVGnest (polygon nesting, optional): https://github.com/Jack000/SVGnest
-- ASUS at hackathons (Ascent GX10): https://www.asus.com/us/business/resources/news/asus-la-hacks-2026-ai-hackathon/
 
 ---
 
@@ -510,6 +507,6 @@ Conventions: no database; no global state beyond the hub; every domain-specific 
 - **Inventory**: parts detected from frames, user-editable.
 - **Match**: a manual's buildability against an inventory, with substitutions.
 - **Guide**: the scrollable, animated presentation of one manual's steps.
-- **Observation source**: any producer of JPEG frames on the hub protocol (glasses bridge, phone PWA, UNO Q webcam).
+- **Observation source**: any producer of JPEG frames on the hub protocol (glasses bridge, glasses simulator, phone PWA).
 - **Verifier**: vision or hardware check of one step, producing `VerifyResult`.
 - **Replan**: recomputation of remaining steps after a part goes missing.

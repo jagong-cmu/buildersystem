@@ -11,6 +11,7 @@
     "eval:vision": "tsx --env-file=.env.local scripts/eval-vision.ts",
     "eval:promptfoo": "promptfoo eval -c promptfooconfig.yaml --env-file .env.local --no-cache",
     "manuals:index": "tsx scripts/index-manuals.ts",
+    "dropbox:auth": "tsx --env-file=.env.local scripts/dropbox-auth.ts",
     "predev": "pnpm manuals:index",
     "prebuild": "pnpm manuals:index",
     "pretest": "pnpm manuals:index"
@@ -21,8 +22,10 @@
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "ai": "^7.0.107",
+    "dropbox": "10.46.0",
     "js-aruco2": "2.0.0",
     "next": "16.3.5",
+    "qrcode": "1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "three": "^0.186.0",
@@ -32,6 +35,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.186.0",

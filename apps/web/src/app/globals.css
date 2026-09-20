@@ -52,7 +52,7 @@ html { scroll-behavior: smooth; }
 .step-dot.done { background: var(--ok); }
 .step-dot.active { background: var(--accent); width: 1.5rem; }
 
-.live-pip { position: absolute; right: 1rem; top: 4rem; width: 16rem; z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
+.live-pip { position: absolute; right: 1rem; top: 4rem; width: 22rem; max-width: 45%; z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
 
 .dot { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; margin-left: .35rem; background: var(--muted); }
 .dot.warn { background: var(--warn); }

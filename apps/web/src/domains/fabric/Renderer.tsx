@@ -50,7 +50,7 @@ export function FabricRenderer({ manual, step, registerSnapshot }: RendererProps
   const scale = Math.min((W - 80) / content.w, (H - 120) / content.h, 3);
 
   return (
-    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMin meet" style={{ background: "#0f1318", padding: "4.5rem 4rem 15rem", boxSizing: "border-box" }}>
+    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMin meet" style={{ background: "#0f1318", padding: "4.5rem 4rem 17rem", boxSizing: "border-box" }}>
       <defs>
         <style>{`
           .seam { stroke-dasharray: 8 6; animation: dash 1s linear infinite; }
