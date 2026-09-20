@@ -3,7 +3,7 @@
 // wearer looks at the pile. Scan 10 s / Snap / Upload stay as secondary actions.
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Inventory, PartType } from "@/core/types";
+import type { DomainId, Inventory, PartType } from "@/core/types";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { useDetections, recordDetections } from "@/lib/detections";
 import { coverageHint, mergeWithPins } from "@/lib/live-inventory";
@@ -18,9 +18,15 @@ import { ScrapMeasure } from "./ScrapMeasure";
 import { useLiveInventory } from "./useLiveInventory";
 import { DropboxPhotos } from "./DropboxPhotos";
 
+const DOMAINS: DomainId[] = ["lego", "breadboard", "fabric"];
+
 export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: PartType[]; dropbox?: boolean }) {
-  const [domain] = useDomain();
+  const [domain, setDomain] = useDomain();
   const [inventory, setInventory] = useInventory(domain);
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("domain");
+    if (d && DOMAINS.includes(d as DomainId)) setDomain(d as DomainId);
+  }, [setDomain]);
   const [sourceId, setSourceId] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
