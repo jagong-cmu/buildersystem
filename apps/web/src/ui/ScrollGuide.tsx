@@ -4,12 +4,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchManual } from "@/core/matcher";
-import type { BoardPlacement, Manual, Step, VerifyResult, VerifyStatus } from "@/core/types";
+import { replan } from "@/core/replan";
+import type { BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
 import { hardwareVerifier } from "@/domains/breadboard/verifiers";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
 import { RENDERERS } from "@/domains/renderers";
 import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
-import { HUB_HTTP, sendControl } from "@/lib/hub";
+import { HUB_HTTP, sendControl, subscribeControl } from "@/lib/hub";
 import { useInventory } from "@/lib/inventory-store";
 import { LiveFeed } from "./LiveFeed";
 
@@ -22,7 +23,15 @@ const BADGE: Record<VerifyStatus, { cls: string; label: string }> = {
   unsure: { cls: "", label: "couldn't confirm" },
 };
 
-export function ScrollGuide({ manual }: { manual: Manual }) {
+interface PlanBanner {
+  fromStep: number;
+  unresolved: Requirement[];
+  subs: { note: string }[];
+  until: number;
+}
+
+export function ScrollGuide({ initial }: { initial: Manual }) {
+  const [manual, setManual] = useState(initial);
   const plugin = PLUGINS[manual.domain];
   const Renderer = RENDERERS[manual.domain];
   const [inventory] = useInventory(manual.domain);
@@ -35,6 +44,10 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
   const armedAt = useRef<Record<number, number>>({});
   const cards = useRef<(HTMLElement | null)[]>([]);
   const snapshot = useRef<(() => Promise<Blob | null>) | null>(null);
+  const activeRef = useRef(active);
+  const verifyRef = useRef(verify);
+  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [banner, setBanner] = useState<PlanBanner | null>(null);
   const registerSnapshot = useCallback((fn: () => Promise<Blob | null>) => {
     snapshot.current = fn;
   }, []);
@@ -79,6 +92,62 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
 
   const scrollTo = useCallback((i: number) => {
     cards.current[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const have = useCallback((partType: string, color?: string) =>
+    inventory.items.filter((it) => it.partType === partType && (MATCH_DEFAULTS[manual.domain].colorAware ? (it.color ?? "") === (color ?? "") : true)).reduce((s, it) => s + it.qty, 0),
+  [inventory.items, manual.domain]);
+
+  const reportMissing = useCallback((step: number, req: Requirement) => {
+    const completedThrough = step - 1;
+    const quantity = Math.max(req.qty, have(req.partType, req.color));
+    const result = replan(
+      manual,
+      inventory,
+      completedThrough,
+      [{ ...req, qty: quantity }],
+      plugin.substitutions,
+      MATCH_DEFAULTS[manual.domain],
+    );
+    setManual(result.manual);
+    if (bannerTimer.current) clearTimeout(bannerTimer.current);
+    setBanner({ fromStep: result.fromStep, unresolved: result.unresolved, subs: result.subs, until: Date.now() + 6000 });
+    bannerTimer.current = setTimeout(() => {
+      setBanner((current) => current ? { ...current, until: 0 } : null);
+    }, 6000);
+    setVerify((current) => Object.fromEntries(Object.entries(current).filter(([n]) => Number(n) < result.fromStep)));
+    scrollTo(result.fromStep);
+    sendControl({ type: "say", text: `Plan updated from step ${result.fromStep}.` });
+  }, [have, inventory, manual, plugin, scrollTo]);
+
+  const latestReportMissing = useRef(reportMissing);
+  useEffect(() => {
+    latestReportMissing.current = reportMissing;
+  }, [reportMissing]);
+
+  useEffect(() => {
+    activeRef.current = active;
+    verifyRef.current = verify;
+  }, [active, verify]);
+
+  useEffect(() => {
+    return subscribeControl((msg) => {
+      if (msg.type !== "part.missing" || typeof msg.partType !== "string") return;
+      const verified = Object.entries(verifyRef.current)
+        .filter(([, result]) => result.status === "verified")
+        .map(([n]) => Number(n));
+      const completedThrough = verified.length > 0 ? Math.max(...verified) : activeRef.current - 1;
+      const req: Requirement = {
+        partType: msg.partType,
+        qty: typeof msg.qty === "number" && msg.qty > 0 ? msg.qty : 1,
+        ...(typeof msg.color === "string" ? { color: msg.color } : {}),
+      };
+      latestReportMissing.current(completedThrough + 1, req);
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (bannerTimer.current) clearTimeout(bannerTimer.current);
   }, []);
 
   // Deep link + keyboard.
@@ -129,9 +198,6 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
     if (step < manual.steps.length) scrollTo(step + 1);
   }
 
-  const have = (partType: string, color?: string) =>
-    inventory.items.filter((it) => it.partType === partType && (MATCH_DEFAULTS[manual.domain].colorAware ? (it.color ?? "") === (color ?? "") : true)).reduce((s, it) => s + it.qty, 0);
-
   return (
     <div className="grid lg:grid-cols-[1.25fr_1fr] gap-0 max-w-7xl mx-auto">
       {/* Sticky viewport */}
@@ -143,6 +209,20 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
           <span className="chip">step {active} / {manual.steps.length}</span>
           {active > 0 && <span className="chip muted">{manual.steps[active - 1].title}</span>}
         </div>
+        {banner && (banner.until > Date.now() || banner.unresolved.length > 0) && (
+          <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10 panel px-4 py-2 text-sm shadow-xl">
+            {banner.until > Date.now() && <div className="font-medium">Plan updated from step {banner.fromStep}</div>}
+            {banner.until > Date.now() && banner.subs.map((sub, i) => <div key={i} className="muted text-xs">{sub.note}</div>)}
+            {banner.unresolved.length > 0 && (
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="chip warn">Still missing: {banner.unresolved.map((req) => reqLabel(manual.domain, req)).join(", ")}</span>
+                {plugin.commerce?.(banner.unresolved).map((link) => (
+                  <a key={link.url} className="btn sm" href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="absolute right-3 top-3 flex gap-2">
           <button className="btn sm" onClick={() => setLive((l) => !l)}>
             {live ? "hide live" : "live"}
@@ -220,6 +300,14 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
                   ))}
                 </div>
               )}
+              <details>
+                <summary className="cursor-pointer text-sm muted">Missing a part?</summary>
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {s.callouts.map((callout, i) => (
+                    <button key={i} className="btn sm" onClick={() => reportMissing(s.n, callout)}>{reqLabel(manual.domain, callout)}</button>
+                  ))}
+                </div>
+              </details>
               <p>{s.text}</p>
               {s.expected.probes?.length ? (
                 <div className="muted text-xs mono">
