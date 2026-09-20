@@ -1,0 +1,11 @@
+{
+  "items": [
+    { "partType": "lego:3001", "color": "green", "qty": 1 },
+    { "partType": "lego:3001", "color": "red", "qty": 1 },
+    { "partType": "lego:3020", "color": "blue", "qty": 1 },
+    { "partType": "lego:3020", "color": "yellow", "qty": 1 }
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Lego_Color_Bricks.jpg",
+  "license": "CC BY-SA 2.0",
+  "note": "Hard mixed-color pile. Counts include only fully visible standard 2x4 bricks and plates; special shapes and occluded parts are omitted."
+}

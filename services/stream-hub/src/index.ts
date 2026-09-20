@@ -97,6 +97,7 @@ const server = http.createServer(async (req, res) => {
           fps: s.fps,
           frames: s.ring.all().length,
           latestSeq: s.ring.latest()?.header.seq ?? null,
+          latestTs: s.ring.latest()?.header.ts ?? null,
         })),
       );
     }

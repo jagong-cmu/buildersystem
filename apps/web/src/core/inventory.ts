@@ -11,11 +11,13 @@ export function inventorySchema(plugin: DomainPlugin) {
     color: z.string().optional().describe("Dominant color name, lowercase, only when meaningful (LEGO)."),
     conf: z.number().min(0).max(1),
     bbox: z
-      .tuple([z.number(), z.number(), z.number(), z.number()])
+      .array(z.number())
+      .length(4)
+      .transform((value) => value as [number, number, number, number])
       .optional()
       .describe("Normalized [x, y, w, h] of one representative instance, 0..1."),
     polygonMm: z
-      .array(z.tuple([z.number(), z.number()]))
+      .array(z.array(z.number()).length(2).transform((value) => value as [number, number]))
       .optional()
       .describe("Fabric only: outline of the scrap in millimetres, using the marker mat for scale."),
     attrs: z.record(z.string(), z.union([z.number(), z.string()])).optional().describe("e.g. { lengthMm: 180 } for a zipper"),
