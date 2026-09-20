@@ -4,11 +4,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchManual } from "@/core/matcher";
-import type { Manual, VerifyResult, VerifyStatus } from "@/core/types";
+import type { BoardPlacement, Manual, Step, VerifyResult, VerifyStatus } from "@/core/types";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
+import { hardwareVerifier } from "@/domains/breadboard/verifiers";
 import { RENDERERS } from "@/domains/renderers";
 import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
-import { sendControl } from "@/lib/hub";
+import { HUB_HTTP, sendControl } from "@/lib/hub";
 import { useInventory } from "@/lib/inventory-store";
 import { LiveFeed } from "./LiveFeed";
 
@@ -102,7 +103,17 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
   async function check(step: number) {
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "checking" } }));
     sendControl({ type: "check", step });
+    let hardwareHint: string | undefined;
     try {
+      const hardwareStep = manual.steps[step - 1];
+      if (hardwareStep?.expected.probes?.length) {
+        const hardware = await hardwareVerifier.verify(manual.id, hardwareStep as Step<BoardPlacement>, { hubHttp: HUB_HTTP });
+        if (hardware.status === "verified" || hardware.status === "mismatch") {
+          setVerify((v) => ({ ...v, [step]: hardware }));
+          return;
+        }
+        hardwareHint = hardware.hint;
+      }
       const fd = new FormData();
       fd.append("manualId", manual.id);
       fd.append("step", String(step));
@@ -111,9 +122,10 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
       if (snap) fd.append("expected", snap, "expected.png");
       const res = await fetch("/api/verify", { method: "POST", body: fd });
       const r = (await res.json()) as VerifyResult;
-      setVerify((v) => ({ ...v, [step]: r }));
+      setVerify((v) => ({ ...v, [step]: r.status === "unsure" && hardwareHint ? { ...r, hint: `${hardwareHint} ${r.hint ?? ""}`.trim() } : r }));
     } catch (e) {
-      setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "unsure", hint: (e as Error).message } }));
+      const hint = (e as Error).message;
+      setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "unsure", hint: hardwareHint ? `${hardwareHint} ${hint}` : hint } }));
     }
   }
   function markDone(step: number) {
