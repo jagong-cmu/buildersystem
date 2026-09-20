@@ -47,9 +47,9 @@ export default async function LibraryPage() {
                     <td className="py-2 pr-4"><span className="chip info">{entry.source === "builtin" ? "built-in" : entry.overridesBuiltin ? "Dropbox (overrides built-in)" : "Dropbox"}</span></td>
                     <td className="py-2 pr-4">{entry.files.length ? entry.files.join(", ") : "—"}</td>
                     <td className="py-2 pr-4">
-                      {entry.status === "ok" ? <span className="chip ok">ok</span> : <span className="chip warn" title={entry.error}>{entry.error ?? "error"}</span>}
+                      {entry.status === "ok" ? <span className="chip ok">ok</span> : entry.status === "pdf" ? <span className="chip info">PDF · Ingest</span> : entry.status === "draft" ? <a className="chip info" href={`/library/${entry.domain}/${entry.id}/review`}>draft · Review</a> : entry.status === "needs review" ? <a className="chip warn" href={`/library/${entry.domain}/${entry.id}/review`}>needs review</a> : <span className="chip warn" title={entry.error}>{entry.error ?? "error"}</span>}
                     </td>
-                    <td className="py-2">{entry.status === "ok" && <a className="underline" href={`/guide/${entry.id}`}>Open guide</a>}</td>
+                    <td className="py-2">{entry.status === "ok" && <a className="underline" href={`/guide/${entry.id}`}>Open guide</a>}{entry.status === "pdf" && <a className="btn sm" href={`/library/${entry.domain}/${entry.id}/review`}>Ingest</a>}</td>
                   </tr>
                 ))}
               </tbody>
