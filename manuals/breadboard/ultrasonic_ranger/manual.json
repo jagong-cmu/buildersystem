@@ -1,0 +1,190 @@
+{
+  "board": "uno",
+  "parts": [
+    {
+      "id": "sonar",
+      "partType": "bb:ultrasonic_hcsr04",
+      "pins": [
+        {
+          "row": "e",
+          "col": 10
+        },
+        {
+          "row": "e",
+          "col": 11
+        },
+        {
+          "row": "e",
+          "col": 12
+        },
+        {
+          "row": "e",
+          "col": 13
+        }
+      ],
+      "polarity": [
+        "VCC",
+        "Trig",
+        "Echo",
+        "GND"
+      ]
+    },
+    {
+      "id": "led",
+      "partType": "bb:led_red",
+      "pins": [
+        {
+          "row": "e",
+          "col": 22
+        },
+        {
+          "row": "e",
+          "col": 23
+        }
+      ],
+      "polarity": [
+        "anode",
+        "cathode"
+      ]
+    },
+    {
+      "id": "r1",
+      "partType": "bb:resistor_220",
+      "pins": [
+        {
+          "row": "d",
+          "col": 23
+        },
+        {
+          "row": "gnd",
+          "col": 23
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "id": "w_gnd",
+      "from": {
+        "board": "GND"
+      },
+      "to": {
+        "row": "gnd",
+        "col": 1
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_vcc",
+      "from": {
+        "board": "5V"
+      },
+      "to": {
+        "row": "a",
+        "col": 10
+      },
+      "color": "red"
+    },
+    {
+      "id": "w_trig",
+      "from": {
+        "board": "D12"
+      },
+      "to": {
+        "row": "a",
+        "col": 11
+      },
+      "color": "green"
+    },
+    {
+      "id": "w_echo",
+      "from": {
+        "board": "D11"
+      },
+      "to": {
+        "row": "a",
+        "col": 12
+      },
+      "color": "blue"
+    },
+    {
+      "id": "w_gnd2",
+      "from": {
+        "row": "a",
+        "col": 13
+      },
+      "to": {
+        "row": "gnd",
+        "col": 13
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_led",
+      "from": {
+        "board": "D9"
+      },
+      "to": {
+        "row": "a",
+        "col": 22
+      },
+      "color": "yellow"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ground rail",
+      "add": [
+        "w_gnd"
+      ],
+      "text": "Connect the UNO's GND pin to the breadboard's blue ground rail with a black jumper."
+    },
+    {
+      "title": "Sensor",
+      "add": [
+        "sonar",
+        "w_vcc",
+        "w_gnd2"
+      ],
+      "text": "Plug the HC-SR04's four pins into e10–e13 (VCC, Trig, Echo, GND, eyes facing out). Wire 5V to a10 and a13 to the ground rail."
+    },
+    {
+      "title": "Trig / Echo",
+      "add": [
+        "w_trig",
+        "w_echo"
+      ],
+      "text": "Wire D12 to a11 (Trig) and D11 to a12 (Echo).",
+      "probes": [
+        {
+          "pin": "D11",
+          "mode": "digitalRead",
+          "expect": {
+            "value": 0
+          },
+          "note": "Echo idles LOW"
+        }
+      ]
+    },
+    {
+      "title": "LED",
+      "add": [
+        "led",
+        "r1",
+        "w_led"
+      ],
+      "text": "Seat the red LED in e22 (long leg) and e23, 220Ω from d23 to ground, and wire D9 to a22.",
+      "probes": [
+        {
+          "pin": "D9",
+          "mode": "pulse",
+          "expect": {
+            "value": 1
+          },
+          "note": "Blink rate follows distance"
+        }
+      ]
+    }
+  ],
+  "sketch": "ultrasonic_ranger.ino"
+}

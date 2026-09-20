@@ -22,6 +22,38 @@ export function endXY(e: Hole | BoardPin): [number, number] {
   return "board" in e ? boardXY(e) : holeXY(e);
 }
 
+/** Multi-pin modules drawn as a labelled block spanning their pins (anything with its own PCB or a DIP package). */
+const MODULE_LABELS: Record<string, string> = {
+  "bb:ultrasonic_hcsr04": "HC-SR04",
+  "bb:dht11": "DHT11",
+  "bb:ir_receiver": "IR RX",
+  "bb:joystick": "JOYSTICK",
+  "bb:lcd1602": "LCD1602",
+  "bb:relay_5v": "RELAY",
+  "bb:ic_74hc595": "74HC595",
+  "bb:ic_l293d": "L293D",
+  "bb:seg7_1": "8",
+  "bb:seg7_4": "8.8.8.8",
+  "bb:servo_sg90": "SG90",
+  "bb:uln2003": "ULN2003",
+  "bb:stepper_28byj48": "28BYJ-48",
+  "bb:dc_motor": "MOTOR",
+  "bb:transistor_pn2222": "2N2222",
+  "bb:diode_1n4007": "1N4007",
+  "bb:power_module": "PSU",
+};
+export function moduleLabel(partType: string): string {
+  return MODULE_LABELS[partType] ?? partType.replace(/^bb:/, "").toUpperCase();
+}
+export function moduleBox(partType: string, pts: [number, number][]): { x: number; y: number; w: number; h: number; fill: string } | null {
+  if (!(partType in MODULE_LABELS)) return null;
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys);
+  const w = Math.max(maxX - minX + 28, 60);
+  const fill = partType.startsWith("bb:ic_") || partType.startsWith("bb:seg7") || partType === "bb:transistor_pn2222" ? "#1c1c1c" : partType === "bb:relay_5v" ? "#2f5fb3" : "#1f5a78";
+  return { x: (minX + maxX) / 2 - w / 2, y: minY - 46, w, h: 34, fill };
+}
+
 /** Cubic wire path between two endpoints, arching above the higher one. */
 export function wirePath(from: Hole | BoardPin, to: Hole | BoardPin): string {
   const [x1, y1] = endXY(from);

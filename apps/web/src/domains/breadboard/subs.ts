@@ -1,5 +1,5 @@
 import type { BoardPlacement, SubstitutionRule } from "@/core/types";
-import { RESISTOR_VALUES, resistorId, ohmsLabel } from "./vocabulary";
+import { LED_COLORS, RESISTOR_VALUES, resistorId, ohmsLabel } from "./vocabulary";
 
 const TOLERANCE = 0.1;
 
@@ -45,12 +45,11 @@ export function generateResistorSubs(): SubstitutionRule<BoardPlacement>[] {
   return rules;
 }
 
-const LED_COLORS = ["red", "green", "yellow", "blue"];
-
 export function generateLedSubs(): SubstitutionRule<BoardPlacement>[] {
   const rules: SubstitutionRule<BoardPlacement>[] = [];
-  for (const want of LED_COLORS)
-    for (const have of LED_COLORS) {
+  const colors = Object.keys(LED_COLORS);
+  for (const want of colors)
+    for (const have of colors) {
       if (want === have) continue;
       rules.push({
         id: `bb:led:${have}-for-${want}`,
@@ -64,4 +63,10 @@ export function generateLedSubs(): SubstitutionRule<BoardPlacement>[] {
   return rules;
 }
 
-export const BREADBOARD_SUBS: SubstitutionRule<BoardPlacement>[] = [...generateResistorSubs(), ...generateLedSubs()];
+/** The kit's two buzzers are interchangeable for simple on/off beeps (the sketch drives either). */
+const BUZZER_SUBS: SubstitutionRule<BoardPlacement>[] = [
+  { id: "bb:buzzer:passive-for-active", domain: "breadboard", consumes: [{ partType: "bb:buzzer_passive", qty: 1 }], produces: { partType: "bb:buzzer_active", qty: 1 }, penalty: 1, note: "A passive buzzer can stand in for the active one; drive it with tone() instead of a steady HIGH." },
+  { id: "bb:buzzer:active-for-passive", domain: "breadboard", consumes: [{ partType: "bb:buzzer_active", qty: 1 }], produces: { partType: "bb:buzzer_passive", qty: 1 }, penalty: 1.5, note: "An active buzzer beeps at a fixed pitch, so melodies become on/off pulses." },
+];
+
+export const BREADBOARD_SUBS: SubstitutionRule<BoardPlacement>[] = [...generateResistorSubs(), ...generateLedSubs(), ...BUZZER_SUBS];

@@ -1,6 +1,6 @@
 // Final-state thumbnail (PRD §5.3): a simplified breadboard SVG using the renderer's layout math. Node-safe.
 import type { BoardPlacement, Manual } from "@/core/types";
-import { BOARD_PINS, BOARD_PITCH, BOARD_X0, BOARD_Y, COL0, COLS, H, PITCH, ROW_Y, W, WIRE_COLORS, endXY, holeXY, wirePath } from "./layout";
+import { BOARD_PINS, BOARD_PITCH, BOARD_X0, BOARD_Y, COL0, COLS, H, PITCH, ROW_Y, W, WIRE_COLORS, endXY, holeXY, moduleBox, moduleLabel, wirePath } from "./layout";
 
 const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!);
 
@@ -37,6 +37,9 @@ export function thumbnailSvg(manual: Manual<BoardPlacement>): string {
       const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
       out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#999" stroke-width="3"/>`);
       out.push(`<g transform="translate(${cx} ${cy}) rotate(${ang.toFixed(1)})"><rect x="-22" y="-7" width="44" height="14" rx="5" fill="#d9c8a0" stroke="#7a6a45"/><rect x="-14" y="-7" width="4" height="14" fill="#e11"/><rect x="-5" y="-7" width="4" height="14" fill="#e11"/><rect x="4" y="-7" width="4" height="14" fill="#8b4513"/></g>`);
+    } else if (p.partType === "bb:led_rgb") {
+      for (const [x, y] of pts) out.push(`<line x1="${x}" y1="${y}" x2="${x}" y2="${y - 16}" stroke="#999" stroke-width="3"/>`);
+      out.push(`<circle cx="${cx}" cy="${y1 - 30}" r="14" fill="#b26be0" stroke="#fff8"/>`);
     } else if (p.partType.startsWith("bb:led")) {
       const fill = WIRE_COLORS[p.partType.replace("bb:led_", "")] ?? "#e33";
       out.push(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y1 - 18}" stroke="#999" stroke-width="3"/><line x1="${x2}" y1="${y2}" x2="${x2}" y2="${y2 - 14}" stroke="#999" stroke-width="3"/>`);
@@ -48,8 +51,19 @@ export function thumbnailSvg(manual: Manual<BoardPlacement>): string {
       const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
       out.push(`<rect x="${Math.min(...xs) - 8}" y="${Math.min(...ys) - 8}" width="${Math.max(...xs) - Math.min(...xs) + 16}" height="${Math.max(...ys) - Math.min(...ys) + 16}" rx="4" fill="#2b2b2b" stroke="#666"/>`);
       out.push(`<circle cx="${xs.reduce((s, v) => s + v, 0) / xs.length}" cy="${ys.reduce((s, v) => s + v, 0) / ys.length}" r="9" fill="#111" stroke="#888"/>`);
-    } else if (p.partType === "bb:potentiometer" || p.partType === "bb:buzzer") {
-      out.push(`<circle cx="${cx}" cy="${cy - 24}" r="14" fill="#333" stroke="#888"/>`);
+    } else if (p.partType === "bb:potentiometer") {
+      out.push(`<rect x="${cx - 16}" y="${cy - 40}" width="32" height="26" rx="4" fill="#2f5fb3" stroke="#9bb"/><circle cx="${cx}" cy="${cy - 27}" r="8" fill="#111" stroke="#888"/>`);
+    } else if (p.partType.startsWith("bb:buzzer")) {
+      out.push(`<circle cx="${cx}" cy="${cy - 24}" r="14" fill="#222" stroke="#888"/><circle cx="${cx}" cy="${cy - 24}" r="3" fill="#666"/>`);
+    } else if (p.partType === "bb:thermistor" || p.partType === "bb:tilt_switch") {
+      out.push(`<line x1="${x1}" y1="${y1}" x2="${cx - 4}" y2="${cy - 18}" stroke="#999" stroke-width="3"/><line x1="${x2}" y1="${y2}" x2="${cx + 4}" y2="${cy - 18}" stroke="#999" stroke-width="3"/>`);
+      out.push(`<rect x="${cx - 7}" y="${cy - 40}" width="14" height="22" rx="${p.partType === "bb:thermistor" ? 7 : 4}" fill="#111" stroke="#777"/>`);
+    } else {
+      const box = moduleBox(p.partType, pts);
+      if (box) {
+        out.push(`<rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="5" fill="${box.fill}" stroke="#9ab"/>`);
+        out.push(`<text x="${box.x + box.w / 2}" y="${box.y + box.h / 2 + 4}" font-size="10" fill="#eef" text-anchor="middle">${esc(moduleLabel(p.partType))}</text>`);
+      }
     }
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${out.join("")}</svg>`;

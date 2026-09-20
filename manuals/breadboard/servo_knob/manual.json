@@ -1,0 +1,204 @@
+{
+  "board": "uno",
+  "parts": [
+    {
+      "id": "servo",
+      "partType": "bb:servo_sg90",
+      "pins": [
+        {
+          "row": "e",
+          "col": 10
+        },
+        {
+          "row": "e",
+          "col": 11
+        },
+        {
+          "row": "e",
+          "col": 12
+        }
+      ],
+      "polarity": [
+        "brown GND",
+        "red 5V",
+        "orange signal"
+      ]
+    },
+    {
+      "id": "pot",
+      "partType": "bb:potentiometer",
+      "pins": [
+        {
+          "row": "e",
+          "col": 20
+        },
+        {
+          "row": "e",
+          "col": 22
+        },
+        {
+          "row": "e",
+          "col": 24
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "id": "w_gnd",
+      "from": {
+        "board": "GND"
+      },
+      "to": {
+        "row": "gnd",
+        "col": 1
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_vcc",
+      "from": {
+        "board": "5V"
+      },
+      "to": {
+        "row": "vcc",
+        "col": 1
+      },
+      "color": "red"
+    },
+    {
+      "id": "w_s_gnd",
+      "from": {
+        "row": "a",
+        "col": 10
+      },
+      "to": {
+        "row": "gnd",
+        "col": 10
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_s_vcc",
+      "from": {
+        "row": "vcc",
+        "col": 11
+      },
+      "to": {
+        "row": "a",
+        "col": 11
+      },
+      "color": "red"
+    },
+    {
+      "id": "w_s_sig",
+      "from": {
+        "board": "D9"
+      },
+      "to": {
+        "row": "a",
+        "col": 12
+      },
+      "color": "orange"
+    },
+    {
+      "id": "w_p_vcc",
+      "from": {
+        "row": "vcc",
+        "col": 20
+      },
+      "to": {
+        "row": "a",
+        "col": 20
+      },
+      "color": "red"
+    },
+    {
+      "id": "w_p_sense",
+      "from": {
+        "row": "a",
+        "col": 22
+      },
+      "to": {
+        "board": "A0"
+      },
+      "color": "blue"
+    },
+    {
+      "id": "w_p_gnd",
+      "from": {
+        "row": "a",
+        "col": 24
+      },
+      "to": {
+        "row": "gnd",
+        "col": 24
+      },
+      "color": "black"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ground rail",
+      "add": [
+        "w_gnd"
+      ],
+      "text": "Connect the UNO's GND pin to the breadboard's blue ground rail with a black jumper."
+    },
+    {
+      "title": "Power rail",
+      "add": [
+        "w_vcc"
+      ],
+      "text": "Wire the UNO's 5V pin to the red power rail."
+    },
+    {
+      "title": "Servo",
+      "add": [
+        "servo",
+        "w_s_gnd",
+        "w_s_vcc"
+      ],
+      "text": "Push three male jumpers into the servo's connector and seat their other ends in e10 (brown), e11 (red), e12 (orange). Wire a10 to the ground rail and the red rail to a11."
+    },
+    {
+      "title": "Servo signal",
+      "add": [
+        "w_s_sig"
+      ],
+      "text": "Wire D9 to a12 (orange lead).",
+      "probes": [
+        {
+          "pin": "D9",
+          "mode": "pulse",
+          "expect": {
+            "value": 1
+          },
+          "note": "Servo twitches to its start angle"
+        }
+      ]
+    },
+    {
+      "title": "Potentiometer",
+      "add": [
+        "pot",
+        "w_p_vcc",
+        "w_p_gnd",
+        "w_p_sense"
+      ],
+      "text": "Seat the potentiometer in e20, e22, e24. Red rail to a20, a24 to the ground rail, and the wiper a22 to A0.",
+      "probes": [
+        {
+          "pin": "A0",
+          "mode": "analogRead",
+          "expect": {
+            "min": 0,
+            "max": 1023
+          },
+          "note": "Servo angle follows the knob"
+        }
+      ]
+    }
+  ],
+  "sketch": "servo_knob.ino"
+}

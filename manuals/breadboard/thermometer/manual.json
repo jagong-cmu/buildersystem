@@ -1,0 +1,118 @@
+{
+  "board": "uno",
+  "parts": [
+    {
+      "id": "ntc",
+      "partType": "bb:thermistor",
+      "pins": [
+        {
+          "row": "e",
+          "col": 10
+        },
+        {
+          "row": "e",
+          "col": 14
+        }
+      ]
+    },
+    {
+      "id": "r1",
+      "partType": "bb:resistor_10k",
+      "pins": [
+        {
+          "row": "d",
+          "col": 14
+        },
+        {
+          "row": "d",
+          "col": 18
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "id": "w_gnd",
+      "from": {
+        "board": "GND"
+      },
+      "to": {
+        "row": "gnd",
+        "col": 1
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_vcc",
+      "from": {
+        "board": "5V"
+      },
+      "to": {
+        "row": "a",
+        "col": 10
+      },
+      "color": "red"
+    },
+    {
+      "id": "w_sense",
+      "from": {
+        "row": "a",
+        "col": 14
+      },
+      "to": {
+        "board": "A0"
+      },
+      "color": "blue"
+    },
+    {
+      "id": "w_gnd2",
+      "from": {
+        "row": "a",
+        "col": 18
+      },
+      "to": {
+        "row": "gnd",
+        "col": 18
+      },
+      "color": "black"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ground rail",
+      "add": [
+        "w_gnd"
+      ],
+      "text": "Connect the UNO's GND pin to the breadboard's blue ground rail with a black jumper."
+    },
+    {
+      "title": "Thermistor",
+      "add": [
+        "ntc",
+        "w_vcc"
+      ],
+      "text": "Seat the small black thermistor bead across e10 and e14, and wire 5V to a10."
+    },
+    {
+      "title": "Divider",
+      "add": [
+        "r1",
+        "w_sense",
+        "w_gnd2"
+      ],
+      "text": "Add the 10kΩ resistor from d14 to d18, wire a14 to A0 and a18 to the ground rail.",
+      "probes": [
+        {
+          "pin": "A0",
+          "mode": "analogRead",
+          "expect": {
+            "min": 300,
+            "max": 750
+          },
+          "note": "Room temperature sits mid-range; warms when pinched"
+        }
+      ]
+    }
+  ],
+  "sketch": "thermometer.ino"
+}

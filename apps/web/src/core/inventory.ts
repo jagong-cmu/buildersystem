@@ -38,8 +38,12 @@ export function inventoryPrompt(plugin: DomainPlugin): string {
       "Only report pieces that are fully visible and whose type and color you can identify with certainty. Skip occluded, partially hidden, or unusual pieces entirely rather than guessing. In a pile this usually means reporting only a handful of pieces; never report more instances of a type than you can individually point to.",
     ].join("\n"),
     breadboard: [
-      "Count discrete components. Read resistor color bands to pick the value; if unreadable, choose the closest vocabulary value with low confidence. Count jumper wires individually. Report the board and breadboard if present.",
-      "Do not count a component that is mounted on a board as a separate loose part unless it clearly is one.",
+      "Count discrete components. Report the microcontroller board and the breadboard if present (the ELEGOO UNO R3 is a BLACK Uno-format board; any Uno-shaped board is bb:uno).",
+      "Resistors: read the first three color bands (digit, digit, multiplier) to pick the value; brown-black-brown=100Ω, red-red-brown=220Ω, orange-orange-brown=330Ω, brown-black-red=1kΩ, brown-black-orange=10kΩ. ELEGOO packs resistors taped in strips with a yellow paper label printed with the value (e.g. '220'); trust that label over the bands, and count each resistor in the strip. If the bands are unreadable and there is no label, choose the closest vocabulary value with conf ≤ 0.4.",
+      "LEDs: decide the color from the tinted dome, not the light it emits; a clear dome is white unless it has four legs (bb:led_rgb). Buzzers: a green PCB on the underside means passive, a sealed bottom means active; if you cannot see the underside, report bb:buzzer_active with conf ≤ 0.5. A tiny black bead on two legs is a thermistor, a black cylinder ~12 mm with two legs from one end is a tilt switch.",
+      "Modules are one item each: HC-SR04 (two silver eyes), DHT11 (blue block), joystick (thumb-stick), IR receiver, LCD1602, relay (blue block), 74HC595 / L293D (read the DIP marking), 7-segment displays (count digits), SG90 servo, 28BYJ-48 stepper, ULN2003 driver, power supply module.",
+      "Jumper wires: count individually only when spread out; for a tied bundle report the number you can count with conf ≤ 0.5. Dupont female-male ribbons are bb:dupont_fm. Components still sealed in plastic bags or in the kit tray count as inventory: identify them through the bag when the shape is clear.",
+      "Do not count a component that is soldered onto a module or the Uno (its LEDs, chips, headers) as a separate loose part. Only report bags/parts you can identify with certainty; skip the rest.",
     ].join("\n"),
     fabric: [
       "Each fabric scrap is one item with qty 1 and its outline as polygonMm (use the printed marker mat, 40 mm squares, for scale). Classify the fabric. For a zipper, report attrs.lengthMm.",

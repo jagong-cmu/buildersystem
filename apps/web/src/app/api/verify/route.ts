@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getManualById } from "@/lib/manuals.server";
 import { VISION_MOCK, imageHash, visionObject } from "@/lib/vision";
 import { captureEvidence, type CaptureEvidenceResult } from "@/lib/evidence";
-import type { VerifyResult } from "@/core/types";
+import type { DomainId, VerifyResult } from "@/core/types";
 
 export const runtime = "nodejs";
 
@@ -13,6 +13,14 @@ const resultSchema = z.object({
   conf: z.number().min(0).max(1),
   hint: z.string().describe("One short sentence for the builder: what is right, or what to fix."),
 });
+
+const DOMAIN_VERIFY_NOTES: Partial<Record<DomainId, string>> = {
+  breadboard: [
+    "Breadboard rows are the letters a–j (a–e above the centre channel, f–j below) and columns are the numbers printed along the edge; the two outer strips are the power rails.",
+    "Check that each named component sits in the stated column and that its legs straddle the right rows; for LEDs the longer (anode) leg is at the stated '+' column. A jumper is verified when both its ends are in the named holes / header pin, regardless of wire colour.",
+    "Ignore parts already placed by earlier steps, the USB cable, and anything outside the breadboard. Never verify from the ELEGOO Uno's onboard LEDs alone.",
+  ].join(" "),
+};
 
 /** VISION_MOCK: verified two times out of three, mismatch otherwise, keyed on the frame bytes. */
 function mockVerify(seed: number, step: number): z.infer<typeof resultSchema> {
@@ -68,7 +76,7 @@ export async function POST(req: Request) {
           schema: resultSchema,
           system:
             "You verify one assembly step from camera images. Be conservative: say 'verified' only when the described change is clearly visible, 'mismatch' when something is clearly wrong or missing, otherwise 'unsure'. Never block the builder over lighting or angle.",
-          text: [`Domain: ${manual.domain}. Build: ${manual.title}. Step ${step}: ${s.text}`, `Expected: ${s.expected.description}`, ...labels].join("\n"),
+          text: [`Domain: ${manual.domain}. Build: ${manual.title}. Step ${step}: ${s.text}`, `Expected: ${s.expected.description}`, ...(DOMAIN_VERIFY_NOTES[manual.domain] ? [DOMAIN_VERIFY_NOTES[manual.domain]] : []), ...labels].join("\n"),
           images,
         });
     const result: VerifyResult = { manualId, step, status: out.status, conf: out.conf, hint: out.hint, evidence: evidenceWithoutFrames(captured) };
