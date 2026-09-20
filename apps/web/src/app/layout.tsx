@@ -6,6 +6,7 @@ import { DomainSwitch } from "@/ui/DomainSwitch";
 import { NarrationToggle } from "@/ui/NarrationToggle";
 import { GlassesChip } from "@/ui/GlassesChip";
 import { AutoVerifyToggle } from "@/ui/AutoVerifyToggle";
+import { dropboxEnabled } from "@/lib/dropbox/client";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <nav className="flex gap-3 text-sm muted">
             <Link href="/scan">Scan</Link>
             <Link href="/builds">Builds</Link>
+            {dropboxEnabled() && <Link href="/library">Library</Link>}
             <Link href="/live">Live</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">

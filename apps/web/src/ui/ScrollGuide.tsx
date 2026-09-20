@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchManual } from "@/core/matcher";
 import { replan } from "@/core/replan";
 import { tallyParts } from "@/core/tally";
-import type { BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
+import type { AppliedSub, BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
 import { hardwareVerifier } from "@/domains/breadboard/verifiers";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
 import { RENDERERS } from "@/domains/renderers";
@@ -40,7 +40,14 @@ interface PlanBanner {
   until: number;
 }
 
-export function ScrollGuide({ initial }: { initial: Manual }) {
+interface SavedBuild {
+  url?: string;
+  qrSvg?: string;
+  error?: string;
+  failed: { name: string; error: string }[];
+}
+
+export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: boolean }) {
   const [manual, setManual] = useState(initial);
   const plugin = PLUGINS[manual.domain];
   const Renderer = RENDERERS[manual.domain];
@@ -71,6 +78,11 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
   const verifyRef = useRef(verify);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [banner, setBanner] = useState<PlanBanner | null>(null);
+  const [subs, setSubs] = useState<AppliedSub[]>(match.subs);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<SavedBuild | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const startedAt = useRef<number | null>(null);
   const registerSnapshot = useCallback((fn: () => Promise<Blob | null>) => {
     snapshot.current = fn;
   }, []);
@@ -112,6 +124,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
       MATCH_DEFAULTS[manual.domain],
     );
     setManual(result.manual);
+    setSubs(result.subs);
     if (bannerTimer.current) clearTimeout(bannerTimer.current);
     setBanner({ fromStep: result.fromStep, unresolved: result.unresolved, subs: result.subs, until: Date.now() + 6000 });
     bannerTimer.current = setTimeout(() => {
@@ -135,6 +148,9 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
   useEffect(() => {
     autoVerify.current.enabled = autoVerifyOn;
   }, [autoVerifyOn]);
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, []);
   useEffect(() => {
     autoVerify.current.setStep(active > 0 ? active : null);
   }, [active]);
@@ -226,6 +242,23 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
     }
   }, [total, startCountdown]);
 
+  const captureStepEvidence = useCallback((step: number) => {
+    fetch("/api/evidence", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ manualId: manual.id, step, armedAt: armedAt.current[step] }),
+    }).then(async (response) => {
+      if (!response.ok) return;
+      const body = (await response.json()) as { evidence?: VerifyResult["evidence"] };
+      if (body.evidence) {
+        setVerify((current) => ({
+          ...current,
+          [step]: { ...current[step], evidence: body.evidence },
+        }));
+      }
+    }).catch(() => {});
+  }, [manual.id]);
+
   const check = useCallback(async (step: number, auto = false) => {
     if (autoVerify.current.checking) return;
     autoVerify.current.setChecking(true);
@@ -237,6 +270,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
         const hardware = await hardwareVerifier.verify(manual.id, manual.steps[step - 1] as Step<BoardPlacement>, { hubHttp: HUB_HTTP });
         if (hardware.status !== "unsure") {
           settle(step, hardware);
+          captureStepEvidence(step);
           return;
         }
       }
@@ -254,13 +288,14 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
     } finally {
       autoVerify.current.setChecking(false);
     }
-  }, [manual, settle]);
+  }, [captureStepEvidence, manual, settle]);
   useEffect(() => {
     latestCheck.current = check;
   }, [check]);
 
   function markDone(step: number) {
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "verified", hint: "marked by builder" } }));
+    captureStepEvidence(step);
     if (step < total) {
       sendControl({ type: "say", text: `Step ${step} done.` });
       goTo(step + 1);
@@ -269,6 +304,37 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
     }
   }
 
+  async function saveBuild() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const response = await fetch("/api/dropbox/builds", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          manualId: manual.id,
+          manualSnapshot: manual,
+          verify,
+          subs,
+          startedAt: startedAt.current ?? Date.now(),
+        }),
+      });
+      const body = (await response.json()) as SavedBuild & { error?: string };
+      if (!response.ok) throw new Error(body.error ?? `save failed (${response.status})`);
+      if (!body.url) {
+        setSaved(null);
+        setSaveError(body.error ?? "Upload failed");
+        return;
+      }
+      setSaved(body);
+    } catch (error) {
+      setSaveError((error as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const allVerified = total > 0 && manual.steps.every((s) => verify[s.n]?.status === "verified");
   const step = active > 0 ? manual.steps[active - 1] : null;
   const status: VerifyStatus = step ? (verify[step.n]?.status ?? "armed") : "pending";
   const highlight = useMemo(() => {
@@ -325,6 +391,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
               </button>
             </span>
           )}
+          {dropbox && !saved && <button className="btn sm" disabled={saving} onClick={saveBuild}>{saving ? "Saving…" : "Save build"}</button>}
           <button className={`btn sm${live ? " primary" : ""}`} onClick={() => setLiveOverride(!live)}>{live ? "hide live" : "live"}</button>
           <button className={`btn sm${drawer ? " primary" : ""}`} onClick={() => setDrawer((d) => !d)}>
             details{missingCount > 0 && <span className="dot warn" aria-label={`${missingCount} missing`} />}
@@ -460,6 +527,23 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
             </>
           )}
         </div>
+        {dropbox && allVerified && !saved && (
+          <div className="panel pointer-events-auto p-3 text-left space-y-2 w-full max-w-lg">
+            <div className="font-medium">Save this build to Dropbox?</div>
+            <div className="flex items-center gap-2">
+              <button className="btn primary sm" disabled={saving} onClick={saveBuild}>{saving ? "Saving…" : "Save build"}</button>
+              {saveError && <span className="chip warn">{saveError}</span>}
+            </div>
+          </div>
+        )}
+        {saved && (
+          <div className="panel pointer-events-auto p-3 text-left space-y-2 w-full max-w-lg">
+            <div className="font-medium">Build saved to Dropbox</div>
+            {saved.url && <a className="underline break-all" href={saved.url} target="_blank" rel="noreferrer">{saved.url}</a>}
+            {saved.qrSvg && <div className="w-40 h-40 bg-white p-2" dangerouslySetInnerHTML={{ __html: saved.qrSvg }} />}
+            {saved.failed.length > 0 && <div className="chip warn">{saved.failed.length} files failed</div>}
+          </div>
+        )}
         <div className="step-dots pointer-events-auto" role="tablist" aria-label="steps">
           {manual.steps.map((s) => (
             <button
