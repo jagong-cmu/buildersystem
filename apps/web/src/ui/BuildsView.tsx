@@ -6,7 +6,6 @@ import type { Manual, Match, MatchStatus } from "@/core/types";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
 import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
 import { useDomain, useInventory } from "@/lib/inventory-store";
-import { MANUALS } from "@/lib/manuals";
 import { useLiveInventory } from "./useLiveInventory";
 import { useBuildsLivePref } from "./useHandsFree";
 
@@ -16,7 +15,7 @@ const BUCKET: Record<MatchStatus, { title: string; blurb: string }> = {
   missing: { title: "Missing parts", blurb: "Shop the gap, or scan again." },
 };
 
-export function BuildsView() {
+export function BuildsView({ manuals }: { manuals: Manual[] }) {
   const [domain] = useDomain();
   const [inventory] = useInventory(domain);
   const [colorAware, setColorAware] = useState<boolean>(MATCH_DEFAULTS[domain].colorAware);
@@ -25,8 +24,8 @@ export function BuildsView() {
   const live = useLiveInventory({ domain, enabled: liveOn });
 
   const matches = useMemo(
-    () => rankManuals(inventory, MANUALS, plugin.substitutions, { colorAware }, plugin),
-    [inventory, plugin, colorAware],
+    () => rankManuals(inventory, manuals, plugin.substitutions, { colorAware }, plugin),
+    [inventory, manuals, plugin, colorAware],
   );
   const total = inventory.items.reduce((s, it) => s + it.qty, 0);
 
@@ -68,7 +67,7 @@ export function BuildsView() {
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {group.map((m) => (
-                <BuildCard key={m.manualId} match={m} manual={MANUALS.find((x) => x.id === m.manualId)!} />
+                <BuildCard key={m.manualId} match={m} manual={manuals.find((x) => x.id === m.manualId)!} />
               ))}
             </div>
           </section>

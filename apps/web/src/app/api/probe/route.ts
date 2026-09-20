@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getManual } from "@/lib/manuals";
+import { getManualById } from "@/lib/manuals.server";
 import { compareProbes, type ProbeReading } from "@/domains/breadboard/verifiers";
 import type { VerifyResult } from "@/core/types";
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
   const manualId = String(body.manualId ?? "");
   const step = Number(body.step ?? 0);
-  const manual = getManual(manualId);
+  const manual = await getManualById(manualId);
   const s = manual?.steps.find((candidate) => candidate.n === step);
   const fail = (hint: string): VerifyResult => ({ manualId, step, status: "unsure", hint });
   if (!manual || !s) return NextResponse.json(fail("unknown manual or step"), { status: 404 });
