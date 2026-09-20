@@ -5,7 +5,7 @@
 // window of the last few processed frames, hand-edited
 // rows pinned until Reset, hard cap on vision calls per minute.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DomainId, Inventory } from "@/core/types";
+import type { DomainId, Inventory, InventoryItem } from "@/core/types";
 import { makeInventory } from "@/core/inventory";
 import { useControlBus } from "@/lib/control-bus";
 import { clearDetections, recordDetections } from "@/lib/detections";
@@ -34,6 +34,14 @@ export interface LiveInventoryStatus {
   sourceId: string;
   error: string | null;
   pinned: Set<string>;
+}
+
+/** The last frame the model looked at and what it said, so the user can correct it. */
+export interface ScanSample {
+  blob: Blob;
+  predicted: InventoryItem[];
+  sourceId: string;
+  at: number;
 }
 
 export interface LiveInventoryOptions {
@@ -66,6 +74,7 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
   const [frozen, setFrozen] = useState(false);
   const [pinned, setPinned] = useState<Set<string>>(() => new Set());
   const [stats, setStats] = useState({ processed: 0, skipped: 0, dropped: 0, lastUpdateAt: null as number | null, error: null as string | null, calls: 0 });
+  const [lastSample, setLastSample] = useState<ScanSample | null>(null);
 
   const windowRef = useRef(new FrameWindow(windowSize));
   const limiter = useMemo(() => new RateLimiter(maxPerMinute), [maxPerMinute]);
@@ -143,6 +152,7 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
         bitmap?.close();
         if (!alive || !inv) return;
         lastProcessedAt.current = Date.now();
+        setLastSample({ blob: frame.blob, predicted: inv.items, sourceId, at: Date.now() });
         windowRef.current.push(frame.seq, inv.items);
         recordDetections(inv.items, frame.seq, sourceId, size);
         if (write) {
@@ -208,5 +218,5 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
     error: stats.error,
     pinned,
   };
-  return { status, setFrozen, pinEdit, reset };
+  return { status, lastSample, setFrozen, pinEdit, reset };
 }

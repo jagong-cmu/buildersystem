@@ -6,6 +6,8 @@ import { SANITIZE_BY_DOMAIN, inventoryPrompt, inventorySchema, itemsFromOutput, 
 import { VISION_MOCK, imageHash, visionModel, visionObject } from "@/lib/vision";
 import { BRICKOGNIZE_ENABLED, cropBox, identifyPart, mapLimit, normalizeBrickColor, toVocabPart } from "@/lib/brickognize";
 import { PART_CLASSIFIER_ENABLED, candidatesFor, classifyCrop, resolvePart } from "@/lib/part-classifier";
+import { exemplarParts, type VisionPart } from "@/core/feedback";
+import { loadExemplars } from "@/lib/feedback";
 
 /** Long edge sent to the vision model; larger frames only add upload time and latency. */
 const MAX_EDGE = 1024;
@@ -35,12 +37,14 @@ export async function detectInventory(
 ): Promise<Inventory> {
   const plugin = getPlugin(domain);
   if (VISION_MOCK) return makeInventory(domain, mockItems(plugin, imageHash(images)), sourceId);
-  const prepared = await Promise.all(images.map(prepareImage));
-  if (domain === "lego" && BRICKOGNIZE_ENABLED) return makeInventory(domain, await detectLegoItems(plugin, prepared, text), sourceId);
-  if (domain === "breadboard" && PART_CLASSIFIER_ENABLED && visionModel()) return makeInventory(domain, await detectBreadboardItems(plugin, prepared, text), sourceId);
+  const [prepared, exemplars] = await Promise.all([Promise.all(images.map(prepareImage)), loadExemplars(domain).catch(() => [])]);
+  const prefix = exemplarParts(exemplars);
+  if (domain === "lego" && BRICKOGNIZE_ENABLED) return makeInventory(domain, await detectLegoItems(plugin, prepared, prefix, text), sourceId);
+  if (domain === "breadboard" && PART_CLASSIFIER_ENABLED && visionModel()) return makeInventory(domain, await detectBreadboardItems(plugin, prepared, prefix, text), sourceId);
   const out = await visionObject({
     schema: inventorySchema(plugin),
     system: inventoryPrompt(plugin),
+    prefix,
     text: text ?? "Identify the parts on the table.",
     images: prepared,
     fast: true,
@@ -60,7 +64,7 @@ const LEGO_SANITIZE: SanitizeOptions = { minConf: MIN_PART_SCORE, requireBoxes: 
  * Brickognize, which decides the part number and colour. Without a vision provider the whole frame
  * is sent as a single part. Rows fall back to the vision label when Brickognize is unreachable.
  */
-async function detectLegoItems(plugin: DomainPlugin, images: InventoryImage[], text?: string): Promise<InventoryItem[]> {
+async function detectLegoItems(plugin: DomainPlugin, images: InventoryImage[], prefix: VisionPart[], text?: string): Promise<InventoryItem[]> {
   const vocabIds = new Set(plugin.vocabulary.map((p) => p.id));
   if (!visionModel()) {
     // A close-up of one piece legitimately fills the frame, so skip the box-size plausibility check here.
@@ -70,6 +74,7 @@ async function detectLegoItems(plugin: DomainPlugin, images: InventoryImage[], t
   const out = await visionObject({
     schema: inventorySchema(plugin),
     system: inventoryPrompt(plugin),
+    prefix,
     text: text ?? "Identify the parts on the table.",
     images,
     fast: true,
@@ -112,10 +117,11 @@ const MIN_CLASSIFIER_SCORE = 0.25;
  * zero-shot image model against the vocabulary. The classifier's pick wins when it is confident and
  * disagrees with the vision label; the row keeps the vision label when the classifier is unreachable.
  */
-async function detectBreadboardItems(plugin: DomainPlugin, images: InventoryImage[], text?: string): Promise<InventoryItem[]> {
+async function detectBreadboardItems(plugin: DomainPlugin, images: InventoryImage[], prefix: VisionPart[], text?: string): Promise<InventoryItem[]> {
   const out = await visionObject({
     schema: inventorySchema(plugin),
     system: inventoryPrompt(plugin),
+    prefix,
     text: text ?? "Identify the parts on the table.",
     images,
     fast: true,

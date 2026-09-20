@@ -15,8 +15,9 @@ import { FrameOverlay } from "./FrameOverlay";
 import { LiveFeed } from "./LiveFeed";
 import { ScanControls } from "./ScanControls";
 import { ScrapMeasure } from "./ScrapMeasure";
-import { useLiveInventory } from "./useLiveInventory";
+import { useLiveInventory, type ScanSample } from "./useLiveInventory";
 import { DropboxPhotos } from "./DropboxPhotos";
+import { TeachPanel } from "./TeachPanel";
 
 export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: PartType[]; dropbox?: boolean }) {
   const [domain, setDomain] = useDomain();
@@ -29,10 +30,13 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastFrame, setLastFrame] = useState<Blob | null>(null);
+  const [manualSample, setManualSample] = useState<ScanSample | null>(null);
+  const [teachFrozen, setTeachFrozen] = useState(false);
   const { source, glassesOnline } = usePrimarySource();
   const detections = useDetections();
-  const live = useLiveInventory({ domain, enabled: true, sourceId });
+  const live = useLiveInventory({ domain, enabled: !teachFrozen, sourceId });
   const { status } = live;
+  const sample = [manualSample, live.lastSample].filter((s): s is ScanSample => !!s).sort((a, b) => b.at - a.at)[0] ?? null;
 
   async function recognize(blob: Blob, sourceId: string) {
     setBusy("Identifying parts…");
@@ -41,7 +45,10 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
     try {
       const inv = await postInventory(domain, sourceId, [blob]);
       if (!inv) setError("busy — dropped");
-      else applyResult(inv);
+      else {
+        setManualSample({ blob, predicted: inv.items, sourceId, at: Date.now() });
+        applyResult(inv);
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -59,6 +66,12 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
   function edit(next: Inventory) {
     live.pinEdit(inventory, next);
     setInventory(next);
+  }
+
+  /** Correcting starts from what the model said about that exact frame; the live loop pauses so edits stick. */
+  function startTeaching(active: boolean) {
+    setTeachFrozen(active);
+    if (active && sample) setInventory({ ...inventory, items: sample.predicted, sourceId: sample.sourceId, capturedAt: new Date().toISOString() });
   }
 
   const hint = coverageHint(detections.items);
@@ -99,6 +112,7 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
             </label>
           </div>
         </details>
+        <TeachPanel domain={domain} sample={sample} inventory={inventory} onTeaching={startTeaching} />
         {dropbox && <DropboxPhotos domain={domain} inventory={inventory} onUse={edit} onError={setError} />}
         <div className="flex items-center gap-3 min-h-6">
           {busy && <span className="muted text-sm">{busy}</span>}
