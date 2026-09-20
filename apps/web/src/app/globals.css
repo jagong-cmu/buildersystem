@@ -52,6 +52,16 @@ html { scroll-behavior: smooth; }
 .step-dot.done { background: var(--ok); }
 .step-dot.active { background: var(--accent); width: 1.5rem; }
 
+.tally { position: absolute; left: 1rem; top: 4.5rem; z-index: 6; width: 17rem; max-height: calc(100% - 18rem); display: flex; flex-direction: column; font-size: .8rem; background: color-mix(in srgb, var(--panel) 85%, transparent); backdrop-filter: blur(12px); animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: -24px; }
+.tally.collapsed { width: auto; }
+.tally-head { display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 0; background: transparent; color: var(--text); font-size: .8rem; text-align: left; cursor: pointer; }
+.tally-list { list-style: none; margin: 0; padding: 0 .5rem .5rem; overflow-y: auto; display: flex; flex-direction: column; gap: .15rem; }
+.tally-row { display: flex; align-items: center; gap: .5rem; padding: .3rem .4rem; border-radius: 8px; transition: background .3s ease, opacity .3s ease; }
+.tally-row.now { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.tally-row.spent { opacity: .45; }
+.tally-count { min-width: 2.4rem; text-align: right; font-size: .95rem; font-weight: 600; animation: count-tick .4s cubic-bezier(.22,1,.36,1) both; }
+@keyframes count-tick { from { transform: translateY(-.35rem); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 640px) { .tally { top: 4rem; width: 11rem; max-height: 40%; } .tally-list { padding-bottom: .35rem; } }
 .live-pip { position: absolute; right: 1rem; top: 4rem; width: 16rem; z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
 
 .dot { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; margin-left: .35rem; background: var(--muted); }
