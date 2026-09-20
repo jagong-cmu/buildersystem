@@ -1,7 +1,7 @@
 // Vision verifier (PRD §14.3): expected description + renderer snapshot + before/after frames → VerifyResult.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getManual } from "@/lib/manuals";
+import { getManualById } from "@/lib/manuals.server";
 import { VISION_MOCK, imageHash, visionObject } from "@/lib/vision";
 import { captureEvidence, type CaptureEvidenceResult } from "@/lib/evidence";
 import type { VerifyResult } from "@/core/types";
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   const step = Number(form.get("step") ?? 0);
   const armedAt = Number(form.get("armedAt") ?? 0);
   const expectedFile = form.get("expected");
-  const manual = getManual(manualId);
+  const manual = await getManualById(manualId);
   const s = manual?.steps.find((x) => x.n === step);
   const fail = (hint: string, evidence?: CaptureEvidenceResult): VerifyResult => ({
     manualId,

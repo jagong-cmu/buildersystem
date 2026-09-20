@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { MANUALS } from "@/lib/manuals";
+import { getManuals } from "@/lib/manuals.server";
 import { HubStatus } from "@/ui/HubStatus";
 
-export default function Home() {
-  const byDomain = MANUALS.reduce<Record<string, number>>((acc, m) => ((acc[m.domain] = (acc[m.domain] ?? 0) + 1), acc), {});
+export default async function Home() {
+  const manuals = await getManuals();
+  const byDomain = manuals.reduce<Record<string, number>>((acc, m) => ((acc[m.domain] = (acc[m.domain] ?? 0) + 1), acc), {});
   return (
     <div className="max-w-4xl mx-auto px-5 py-10 space-y-8">
       <div>
