@@ -25,17 +25,6 @@ function logPlan(remote: string, size?: number) {
   console.log(`${dryRun ? "plan" : "upload"} ${remote}${size === undefined ? "" : ` (${size} bytes)`}`);
 }
 
-async function walkFiles(dir: string): Promise<string[]> {
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  const files: string[] = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await walkFiles(full)));
-    else files.push(full);
-  }
-  return files;
-}
-
 async function upload(client: Awaited<ReturnType<typeof getDropbox>>, remote: string, contents: string | Uint8Array) {
   logPlan(remote, typeof contents === "string" ? Buffer.byteLength(contents) : contents.byteLength);
   if (!dryRun) {
@@ -78,7 +67,7 @@ async function seedManuals() {
 }
 
 async function seedPdfs() {
-  const tempRoot = path.join(repoRoot, ".cache", "dropbox-seed");
+  const tempRoot = path.join(repoRoot, "apps", "web", ".cache", "dropbox-seed");
   let count = 0;
   const domains = await fs.readdir(manualsRoot, { withFileTypes: true });
   for (const domainEntry of domains.filter((entry) => entry.isDirectory())) {
