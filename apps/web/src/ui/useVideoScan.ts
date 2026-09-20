@@ -85,8 +85,14 @@ export function useVideoScan(
     update(session);
     timerRef.current = setInterval(async () => {
       if (!session.active) return;
+      session.secondsLeft--;
       const frame = await fetchLatestFrame(session.sourceId);
-      if (!session.active || !frame || frame.seq === session.lastSeq) return;
+      if (!session.active) return;
+      if (!frame || frame.seq === session.lastSeq) {
+        update(session);
+        if (session.secondsLeft <= 0) stop();
+        return;
+      }
       session.lastSeq = frame.seq;
       session.sampled++;
       if (inventoryBusy()) {
@@ -108,7 +114,6 @@ export function useVideoScan(
             if (session.pending === pending) session.pending = null;
           });
       }
-      session.secondsLeft--;
       update(session);
       if (session.secondsLeft <= 0) stop();
     }, 1000);
