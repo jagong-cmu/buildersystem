@@ -180,6 +180,9 @@ final class GlassesStream: ObservableObject {
                 throw StreamError.failed(String(describing: error))
             }
             self.session = session
+            session.errorPublisher.listen { [weak self] error in
+                Task { @MainActor [weak self] in self?.lastError = String(describing: error) }
+            }.store(in: tokens)
 
             try session.start()
             try await withTimeout(seconds: 15, or: StreamError.failed("timed out connecting to the glasses")) {
@@ -273,10 +276,12 @@ extension GlassesStream.Phase {
     var isError: Bool { if case .error = self { return true } else { return false } }
 }
 
-/// Off-main-thread frame work: throttle → downscale → JPEG. All state is
-/// confined to `queue`; SDK callbacks arrive on the SDK's own queue.
+/// Off-main-thread frame work: throttle → downscale → JPEG. Admission state
+/// is guarded by `lock`; encoding runs on `queue`. SDK callbacks arrive on the
+/// SDK's own queue.
 final class FramePipeline: @unchecked Sendable {
     private let queue = DispatchQueue(label: "glasses-bridge.frames", qos: .userInitiated)
+    private let lock = NSLock()
     private var throttle = FrameThrottle(maxFps: 10)
     private var maxWidth: CGFloat = 960
     private var quality: CGFloat = 0.6
@@ -290,32 +295,41 @@ final class FramePipeline: @unchecked Sendable {
     var onSourceFps: ((Double) -> Void)?
 
     func configure(sourceId: String, maxFps: Double, maxWidth: CGFloat, quality: CGFloat) {
-        queue.sync {
+        lock.withLock {
             self.sourceId = sourceId
             self.throttle = FrameThrottle(maxFps: maxFps)
-            self.maxWidth = maxWidth
-            self.quality = quality
             self.fpsCount = 0
             self.fpsWindowStart = 0
+        }
+        queue.sync {
+            self.maxWidth = maxWidth
+            self.quality = quality
         }
     }
 
     func ingest(_ frame: VideoFrame) {
         let capturedAt = Date()
-        queue.async { [self] in
-            let now = capturedAt.timeIntervalSince1970
+        let now = capturedAt.timeIntervalSince1970
+        // Admission is decided on the SDK's thread so frames are dropped, never
+        // queued, while a previous frame is still encoding.
+        var fps: Double?
+        let admitted: Bool = lock.withLock {
             fpsCount += 1
             if fpsWindowStart == 0 { fpsWindowStart = now }
             if now - fpsWindowStart >= 1 {
-                onSourceFps?(Double(fpsCount) / (now - fpsWindowStart))
+                fps = Double(fpsCount) / (now - fpsWindowStart)
                 fpsWindowStart = now
                 fpsCount = 0
             }
-            // Drop while a previous frame is still encoding (never queue).
-            guard !busy, throttle.admit(now: now) else { return }
-            guard let image = frame.makeUIImage() else { return }
+            guard !busy, throttle.admit(now: now) else { return false }
             busy = true
-            defer { busy = false }
+            return true
+        }
+        if let fps { onSourceFps?(fps) }
+        guard admitted else { return }
+        queue.async { [self] in
+            defer { lock.withLock { busy = false } }
+            guard let image = frame.makeUIImage() else { return }
             let target = fitWidth(image.size, maxWidth: maxWidth)
             let scaled: UIImage
             if target == image.size {

@@ -25,6 +25,7 @@ struct BridgeView: View {
             .navigationTitle("Glasses Bridge")
             .sheet(isPresented: $showMissing) { MissingSheet(control: control, error: $controlError) }
             .task(id: settings.hubURL) { await probeHub() }
+            .onChange(of: settings.hubURL, initial: true) { _, _ in reconnectControl() }
         }
     }
 
@@ -176,7 +177,6 @@ struct BridgeView: View {
         } header: { Text("Guide controls") } footer: {
             Text("Buttons POST to \(settings.endpoints?.controlPost.absoluteString ?? "<hub>/control"); the web guide reacts to next / prev / check.")
         }
-        .onChange(of: settings.hubURL, initial: true) { _, _ in reconnectControl() }
     }
 
     private func controlButton(_ title: String, _ msg: ControlMessage) -> some View {

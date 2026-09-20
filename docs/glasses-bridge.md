@@ -63,8 +63,13 @@ Unit tests: ⌘U, or
 
 ```bash
 xcodebuild test -project GlassesBridge.xcodeproj -scheme GlassesBridge \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
+
+If `xcodebuild` reports *iOS X is not installed* even though `xcrun simctl list
+runtimes` shows a runtime, the installed simulator runtime build doesn't match
+the SDK's default; pin it once with
+`xcrun simctl runtime match set iphoneos<sdk-version> <runtime-build>`.
 
 ## 3. Choosing the hub address
 
@@ -95,9 +100,17 @@ Device Kit** section appears (Simulator Debug builds only):
    granted), pairs a mock Ray-Ban Meta, powers it on, unfolds it.
 2. *Put on* — dons the glasses so `AutoDeviceSelector` considers them eligible.
 3. Choose a **Camera feed**: *Mac camera* (the Simulator forwards the Mac's
-   webcam) or *Bundled video* (drop `sample-pile.mp4` into
-   `GlassesBridge/Resources/` and add it to the target; a screen recording of
-   `glasses-sim --pan` over the LEGO pile works well).
+   webcam) or *Bundled video* (`GlassesBridge/Resources/sample-pile.mp4`, a
+   short HEVC clip built from `recordings/demo`). Encode replacements as
+   **HEVC (`hvc1`)** like Meta's own mock test clip — with an H.264 clip the
+   0.9.0 mock fails with `dat_error_mock_stream_internal_error` and the app
+   sits at *streaming* with 0 fps. To rebuild the clip:
+
+   ```bash
+   ffmpeg -framerate 2 -pattern_type glob -i 'recordings/demo/*.jpg' \
+     -vf 'scale=540:960:force_original_aspect_ratio=increase,crop=540:960,format=yuv420p' \
+     -r 30 -c:v libx265 -tag:v hvc1 -crf 28 apps/glasses-bridge-ios/GlassesBridge/Resources/sample-pile.mp4
+   ```
 4. Set **Hub URL** to `http://localhost:8787` (the Simulator shares the Mac's
    network) and press **Start stream**.
 
@@ -150,10 +163,10 @@ Record the results in the table at the bottom.
   not include glasses → phone Bluetooth latency or hub → browser delivery.
 - **Speech recognition** (stretch, PRD §7.2) is not implemented in this PR.
 - **Distribution**: Developer Preview builds only run on phones you sign for.
-- **Not verified in this PR**: nothing here was built with Xcode or run on a
-  simulator/device by the author (Linux-only CI box). The pure-logic files
-  (`HubProtocol.swift`, `Pacing.swift`) and their tests were compiled and run
-  with the Swift 6 toolchain on Linux via a scratch SwiftPM package; the
-  UIKit/DAT/SwiftUI files were written against the 0.9.0 `.swiftinterface`
-  files and Brownmellon's working code but need one `xcodegen generate` + ⌘B
-  on a Mac to confirm.
+- **Verified so far**: builds and unit tests pass with Xcode 26.6 / iOS 26.5
+  Simulator; the Mock Device Kit path (pair → don → bundled video → stream
+  → hub `/produce` → `/live`), the control buttons (`POST /control`) and
+  `say` → `AVSpeechSynthesizer` were exercised in the Simulator against a
+  local hub. **Not verified**: physical glasses (registration handoff,
+  Bluetooth link, real camera stream and bandwidth), Bluetooth audio to the
+  glasses, and a real Wi-Fi network between phone and laptop.
