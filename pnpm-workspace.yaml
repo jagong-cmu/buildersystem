@@ -5,3 +5,7 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
   sharp: true
+  '@playwright/browser-chromium': false
+  '@swc/core': false
+  onnxruntime-node: false
+  protobufjs: false

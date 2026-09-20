@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchManual } from "@/core/matcher";
 import { replan } from "@/core/replan";
+import { tallyParts } from "@/core/tally";
 import type { AppliedSub, BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
 import { hardwareVerifier } from "@/domains/breadboard/verifiers";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
 import { RENDERERS } from "@/domains/renderers";
-import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
+import { DOMAIN_LABEL, partLabel, reqLabel } from "@/lib/format";
 import { HUB_HTTP, sendControl, subscribeControl } from "@/lib/hub";
 import { useInventory } from "@/lib/inventory-store";
 import { AutoVerify } from "@/lib/auto-verify";
@@ -67,7 +68,9 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const [countdown, setCountdown] = useState<{ step: number; left: number } | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const latestCheck = useRef<(step: number, auto?: boolean) => Promise<void>>(async () => {});
+  const latestGoTo = useRef<(i: number) => void>(() => {});
   const [drawer, setDrawer] = useState(false);
+  const [tallyOpen, setTallyOpen] = useState(true);
   const [missingOpen, setMissingOpen] = useState(false);
   const [verify, setVerify] = useState<Record<number, VerifyResult>>({});
   const armedAt = useRef<Record<number, number>>({});
@@ -101,7 +104,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     if (active > 0) {
       armedAt.current[active] ??= Date.now();
       const s = manual.steps[active - 1];
-      sendControl({ type: "step.activated", manualId: manual.id, step: active, text: s.text });
+      sendControl({ type: "step.activated", manualId: manual.id, step: active, text: s.text, callouts: s.callouts, total: manual.steps.length });
       sendControl({ type: "say", text: `Step ${active}. ${s.text}` });
     }
   }, [active, manual]);
@@ -133,6 +136,10 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     sendControl({ type: "say", text: `Plan updated from step ${result.fromStep}.` });
   }, [have, inventory, manual, plugin, goTo]);
 
+  useEffect(() => {
+    latestGoTo.current = goTo;
+  }, [goTo]);
+
   const latestReportMissing = useRef(reportMissing);
   useEffect(() => {
     latestReportMissing.current = reportMissing;
@@ -158,6 +165,14 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       if (msg.type === "motion" && msg.source === primaryId && (msg.state === "active" || msg.state === "settled")) {
         const step = autoVerify.current.onMotion(msg.state);
         if (step != null) void latestCheck.current(step, true);
+        return;
+      }
+      // Remote operator controls (glasses bridge / phone PWA buttons).
+      if (msg.type === "next") return latestGoTo.current(activeRef.current + 1);
+      if (msg.type === "prev") return latestGoTo.current(activeRef.current - 1);
+      if (msg.type === "check" && msg.origin !== "guide") {
+        const step = typeof msg.step === "number" && msg.step > 0 ? msg.step : activeRef.current;
+        if (step > 0) void latestCheck.current(step);
         return;
       }
       if (msg.type !== "part.missing" || typeof msg.partType !== "string") return;
@@ -261,7 +276,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     if (autoVerify.current.checking) return;
     autoVerify.current.setChecking(true);
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "checking" } }));
-    sendControl({ type: "check", step });
+    sendControl({ type: "check", step, origin: "guide" });
     if (auto) sendControl({ type: "say", text: `Checking step ${step}.` });
     try {
       if (manual.steps[step - 1]?.expected.probes?.length) {
@@ -354,6 +369,8 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   );
   const missingCount = manual.requires.filter((r) => have(r.partType, r.color) < r.qty).length;
   const doneCount = Object.values(verify).filter((v) => v.status === "verified").length;
+  const tally = useMemo(() => tallyParts(manual, active), [manual, active]);
+  const partsLeft = tally.reduce((s, t) => s + t.left, 0);
 
   return (
     <div className="stage">
@@ -409,6 +426,31 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
           )}
         </div>
       )}
+
+      {/* Parts tally: counts down as steps place parts */}
+      <aside className={`tally panel${tallyOpen ? "" : " collapsed"}`} aria-label="parts remaining">
+        <button className="tally-head" onClick={() => setTallyOpen((o) => !o)} aria-expanded={tallyOpen}>
+          <span className="font-medium">Parts</span>
+          <span className="chip">{partsLeft} left</span>
+          <span className="muted ml-auto">{tallyOpen ? "−" : "+"}</span>
+        </button>
+        {tallyOpen && (
+          <ul className="tally-list">
+            {tally.map((t, i) => {
+              const h = have(t.partType, t.color);
+              const short = inventory.items.length > 0 && h < t.qty;
+              return (
+                <li key={i} className={`tally-row${t.usedThisStep > 0 ? " now" : ""}${t.left === 0 ? " spent" : ""}`}>
+                  <span key={t.left} className="tally-count mono">{t.left}×</span>
+                  <span className="truncate">{t.color ? `${t.color} ` : ""}{partLabel(manual.domain, t.partType)}</span>
+                  {t.usedThisStep > 0 && <span className="chip info shrink-0">−{t.usedThisStep}</span>}
+                  {short && <span className="chip warn shrink-0" title={`have ${h} of ${t.qty}`}>have {h}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </aside>
 
       {live && (
         <div className="live-pip shadow-xl space-y-2">
@@ -547,13 +589,14 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
               {missingCount > 0 && <span className="chip warn">{missingCount} missing</span>}
             </div>
             <ul className="space-y-1">
-              {manual.requires.map((r, i) => {
+              {tally.map((r, i) => {
                 const h = have(r.partType, r.color);
                 const ok = h >= r.qty;
                 return (
                   <li key={i} className="flex items-center gap-2">
                     <span className={ok ? "text-[var(--ok)]" : "text-[var(--warn)]"}>{ok ? "✓" : "✗"}</span>
                     <span>{reqLabel(manual.domain, r)}</span>
+                    <span className="muted ml-auto mono text-xs">{r.left} left</span>
                     {!ok && <span className="muted">(have {h})</span>}
                   </li>
                 );
