@@ -187,7 +187,9 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     return subscribeControl((msg) => {
       if (msg.type === "motion" && msg.source === primaryId && (msg.state === "active" || msg.state === "settled")) {
         const step = autoVerify.current.onMotion(msg.state);
-        if (step != null) void latestCheck.current(step, true);
+        if (step != null && verifyRef.current[step]?.status !== "verified") {
+          void latestCheck.current(step, true);
+        }
         return;
       }
       if (msg.type === "next") return latestGoTo.current(activeRef.current + 1);
