@@ -16,6 +16,10 @@ export function inventorySchema(plugin: DomainPlugin) {
       .transform((value) => value as [number, number, number, number])
       .optional()
       .describe("Normalized [x, y, w, h] of one representative instance, 0..1."),
+    boxes: z
+      .array(z.array(z.number()).length(4).transform((value) => value as [number, number, number, number]))
+      .optional()
+      .describe("Normalized [x, y, w, h] for EVERY visible instance of this part, 0..1; length should equal qty."),
     polygonMm: z
       .array(z.array(z.number()).length(2).transform((value) => value as [number, number]))
       .optional()
@@ -40,6 +44,7 @@ export function inventoryPrompt(plugin: DomainPlugin): string {
     "Only use part types from this vocabulary (ids are exact):",
     vocab,
     domainNotes[plugin.id],
+    "For each item, give one tight bounding box per visible instance in `boxes` (so a qty of 3 has 3 boxes) and repeat the first in `bbox`.",
     "If nothing from the vocabulary is visible, return an empty items list. Never invent part types.",
   ].join("\n\n");
 }
@@ -61,6 +66,8 @@ export function aggregateFrames(frames: InventoryItem[][]): InventoryItem[] {
         if (it.qty > cur.qty) cur.qty = it.qty;
         if (it.bbox === undefined) delete cur.bbox;
         else cur.bbox = it.bbox;
+        if (it.boxes === undefined) delete cur.boxes;
+        else cur.boxes = it.boxes;
         if (it.polygonMm === undefined) delete cur.polygonMm;
         else cur.polygonMm = it.polygonMm;
         if (it.attrs === undefined) delete cur.attrs;

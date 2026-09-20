@@ -22,6 +22,27 @@ export async function readManualInput(domain: DomainId, id: string, root = manua
   return { id, dir: `manuals/${domain}/${id}`, meta, files };
 }
 
+export async function listManualDirs(root = manualsRoot()): Promise<{ domain: DomainId; id: string; files: string[] }[]> {
+  const result: { domain: DomainId; id: string; files: string[] }[] = [];
+  for (const domain of DOMAIN_IDS) {
+    const domDir = path.join(root, domain);
+    let ids: string[] = [];
+    try {
+      ids = (await fs.readdir(domDir, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+    } catch {
+      continue;
+    }
+    for (const id of ids.sort()) {
+      let files: string[] = [];
+      try {
+        files = (await fs.readdir(path.join(domDir, id), { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+      } catch {}
+      result.push({ domain, id, files });
+    }
+  }
+  return result;
+}
+
 export async function loadLibrary(root = manualsRoot()): Promise<{ manuals: Manual[]; errors: string[] }> {
   const manuals: Manual[] = [];
   const errors: string[] = [];

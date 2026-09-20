@@ -25,6 +25,13 @@ describe("aggregateFrames", () => {
     ]);
   });
 
+  it("carries per-instance boxes from the latest frame", () => {
+    const a: InventoryItem = { ...item("A", 2, 0.8), boxes: [[0, 0, 0.1, 0.1], [0.5, 0.5, 0.1, 0.1]] };
+    const b: InventoryItem = { ...item("A", 1, 0.6), boxes: [[0.2, 0.2, 0.1, 0.1]] };
+    expect(aggregateFrames([[a], [b]])[0].boxes).toEqual([[0.2, 0.2, 0.1, 0.1]]);
+    expect(aggregateFrames([[a], [item("A", 1, 0.6)]])[0].boxes).toBeUndefined();
+  });
+
   it("keeps colors separate", () => {
     expect(aggregateFrames([[item("A", 1, 1, "red"), item("A", 2, 1, "blue")]])).toEqual([
       item("A", 1, 1, "red"),
