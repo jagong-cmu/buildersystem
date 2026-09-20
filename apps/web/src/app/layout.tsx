@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { DomainSwitch } from "@/ui/DomainSwitch";
+import { NarrationToggle } from "@/ui/NarrationToggle";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -25,8 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/builds">Builds</Link>
             <Link href="/live">Live</Link>
           </nav>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <DomainSwitch />
+            <NarrationToggle />
           </div>
         </header>
         <main className="flex-1">{children}</main>
