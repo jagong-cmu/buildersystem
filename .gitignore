@@ -14,3 +14,6 @@ eval/vision/results-*.json
 *.xcodeproj
 *.xcworkspace
 xcuserdata/
+
+apps/glasses-bridge-ios/GlassesBridge/Info.plist
+apps/glasses-bridge-ios/build/
