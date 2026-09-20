@@ -40,10 +40,14 @@ export function writeInventory(inv: Inventory) {
   }
 }
 
+export function isDomainId(d: unknown): d is DomainId {
+  return d === "lego" || d === "breadboard" || d === "fabric";
+}
+
 export function readDomain(): DomainId {
   if (typeof window === "undefined") return "lego";
-  const d = window.localStorage.getItem(DOMAIN_KEY) as DomainId | null;
-  return d && ["lego", "breadboard", "fabric"].includes(d) ? d : "lego";
+  const d = window.localStorage.getItem(DOMAIN_KEY);
+  return isDomainId(d) ? d : "lego";
 }
 
 export function writeDomain(d: DomainId) {

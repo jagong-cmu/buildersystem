@@ -8,6 +8,7 @@
     "dev:hub": "pnpm --filter stream-hub dev",
     "test": "pnpm -r run test",
     "manuals:index": "pnpm --filter web manuals:index",
-    "demo:replay": "pnpm --filter stream-hub replay"
+    "demo:replay": "pnpm --filter stream-hub replay",
+    "demo:breadboard": "pnpm --filter stream-hub replay -- --dir recordings/breadboard-demo"
   }
 }

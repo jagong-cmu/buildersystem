@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Inventory, PartType } from "@/core/types";
-import { useDomain, useInventory } from "@/lib/inventory-store";
+import { isDomainId, useDomain, useInventory } from "@/lib/inventory-store";
 import { useDetections, recordDetections } from "@/lib/detections";
 import { coverageHint, mergeWithPins } from "@/lib/live-inventory";
 import { DOMAIN_LABEL, partLabel } from "@/lib/format";
@@ -19,8 +19,12 @@ import { useLiveInventory } from "./useLiveInventory";
 import { DropboxPhotos } from "./DropboxPhotos";
 
 export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: PartType[]; dropbox?: boolean }) {
-  const [domain] = useDomain();
+  const [domain, setDomain] = useDomain();
   const [inventory, setInventory] = useInventory(domain);
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("domain");
+    if (isDomainId(d)) setDomain(d);
+  }, [setDomain]);
   const [sourceId, setSourceId] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

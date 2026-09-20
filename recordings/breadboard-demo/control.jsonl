@@ -1,0 +1,8 @@
+{"at": 1789900000000, "msg": {"type": "nav", "path": "/scan?domain=breadboard"}}
+{"at": 1789900000500, "msg": {"type": "scan.start", "source": "glasses", "seconds": 6}}
+{"at": 1789900008000, "msg": {"type": "nav", "path": "/builds"}}
+{"at": 1789900012000, "msg": {"type": "nav", "path": "/guide/blink"}}
+{"at": 1789900016000, "msg": {"type": "next"}}
+{"at": 1789900020000, "msg": {"type": "where"}}
+{"at": 1789900023000, "msg": {"type": "check"}}
+{"at": 1789900030000, "msg": {"type": "next"}}

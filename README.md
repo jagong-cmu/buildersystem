@@ -64,6 +64,8 @@ pnpm --filter stream-hub sim -- --dir recordings/take1 --loop
   pnpm demo:replay -- --check --speed 4         # CI self-test, exits 0 when frames + controls went through
   ```
 
+  **Virtual breadboard demo** (no physical breadboard needed): `recordings/breadboard-demo` is assembled from CC BY-SA Wikimedia Commons stills and video frames of Uno + breadboard LED circuits (attribution in `recordings/breadboard-demo/SOURCES.md`). `pnpm demo:breadboard` replays it as the glasses feed and walks `/scan?domain=breadboard → /builds → /guide/blink → next → where → check → next`. A `?domain=` query on `/scan` switches the active domain, so a `nav` message can put the laptop in the right domain.
+
   Replays a `record` folder: frames at their recorded spacing (looping until the controls finish), and the operator messages from `control.jsonl` (`nav`, `scan.start/stop`, `check`, `next`, `prev`, `part.missing`, `where` — app-emitted messages are skipped) at their recorded offsets. `recordings/demo` walks `/scan → /builds → /guide/phone_stand → next → where → check → next` with the browser untouched; run the web app with `VISION_MOCK=1` for a deterministic run.
 
 Real glasses: the iOS bridge in `apps/glasses-bridge-ios` (Meta Wearables DAT 0.9.0) streams the glasses camera into the hub as source `glasses`, exposes Scan / Check / Next / Prev / Missing buttons and speaks every `say` message. Setup, Mock Device Kit workflow and the on-device checklist are in [`docs/glasses-bridge.md`](docs/glasses-bridge.md).
