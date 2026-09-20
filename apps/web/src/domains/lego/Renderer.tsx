@@ -116,7 +116,7 @@ function Framer({ target, size }: { target: THREE.Vector3; size: number }) {
     if (!c) return;
     // Portrait viewports have a narrower horizontal FOV, so back off proportionally.
     const aspect = Math.max(0.3, viewport.width / Math.max(1, viewport.height));
-    const d = Math.max(220, size * 2.0) * Math.max(1, 1.25 / aspect);
+    const d = Math.max(220, size * 2.6) * Math.max(1, 1.25 / aspect);
     if (!framed.current) {
       framed.current = true;
       c.target.copy(target);
@@ -167,7 +167,7 @@ export function LegoRenderer({ manual, step, direction, registerSnapshot }: Rend
     const s = box.getSize(new THREE.Vector3()).length();
     // LDraw → three: the scene group is rotated π about X, so (x, y, z) → (x, -y, -z).
     // Aim slightly below the model so it sits above the step card at the bottom of the stage.
-    return { target: new THREE.Vector3(c.x, -c.y - s * 0.22, -c.z), size: s };
+    return { target: new THREE.Vector3(c.x, -c.y - s * 0.12, -c.z), size: s };
   }, [manual, step, stepOf]);
 
   // Fly-in only when moving forward; scrolling back just removes parts.

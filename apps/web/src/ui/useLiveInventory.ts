@@ -1,7 +1,8 @@
 "use client";
 // Continuous inventory from the primary (glasses) source (PRD §9 video mode, §7):
-// sample ≤ 1 fps, prefer frames after motion settled, skip unchanged seq, one
-// vision call in flight, sliding window of the last 8 processed frames, hand-edited
+// poll for new frames, prefer frames after motion settled, skip unchanged seq, one
+// vision call in flight (the next starts as soon as the previous returns), sliding
+// window of the last few processed frames, hand-edited
 // rows pinned until Reset, hard cap on vision calls per minute.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DomainId, Inventory } from "@/core/types";
@@ -14,10 +15,12 @@ import { readInventory, writeInventory } from "@/lib/inventory-store";
 import { FrameWindow, RateLimiter, changedKeys, mergeWithPins } from "@/lib/live-inventory";
 import { usePrimarySource } from "@/lib/sources";
 
-export const DEFAULT_CALLS_PER_MINUTE = Number(process.env.NEXT_PUBLIC_VISION_CALLS_PER_MINUTE ?? 30);
+export const DEFAULT_CALLS_PER_MINUTE = Number(process.env.NEXT_PUBLIC_VISION_CALLS_PER_MINUTE ?? 60);
 const PINS_KEY = (d: DomainId) => `rc:pins:${d}`;
 /** While motion is active, still sample if nothing was processed for this long. */
-const ACTIVE_STARVATION_MS = 4000;
+const ACTIVE_STARVATION_MS = 2500;
+/** Pause between a vision result and grabbing the next frame. */
+const NEXT_FRAME_MS = 150;
 
 export interface LiveInventoryStatus {
   running: boolean;
@@ -54,7 +57,7 @@ function readPins(domain: DomainId): Set<string> {
 }
 
 export function useLiveInventory(opts: LiveInventoryOptions) {
-  const { domain, enabled, writeInventory: write = true, intervalMs = 1000, maxPerMinute = DEFAULT_CALLS_PER_MINUTE, windowSize = 8 } = opts;
+  const { domain, enabled, writeInventory: write = true, intervalMs = 500, maxPerMinute = DEFAULT_CALLS_PER_MINUTE, windowSize = 4 } = opts;
   const primary = usePrimarySource();
   const override = opts.sourceId && primary.sources.find((s) => s.id === opts.sourceId);
   const source = override || primary.source;
@@ -108,18 +111,26 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
   useEffect(() => {
     if (!running) return;
     let alive = true;
-    const tick = async () => {
-      if (!alive || pending.current || inventoryBusy()) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = (ms: number) => {
+      if (!alive) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => void tick(), ms);
+    };
+    const tick = async (): Promise<void> => {
+      if (!alive) return;
+      if (pending.current || inventoryBusy()) return schedule(intervalMs);
       const now = Date.now();
-      if (motion.current === "active" && now - lastProcessedAt.current < ACTIVE_STARVATION_MS) return;
+      if (motion.current === "active" && now - lastProcessedAt.current < ACTIVE_STARVATION_MS) return schedule(intervalMs);
       const frame = await fetchLatestFrame(sourceId).catch(() => null);
-      if (!alive || !frame || frame.seq === lastSeq.current) {
+      if (!alive) return;
+      if (!frame || frame.seq === lastSeq.current) {
         if (frame) setStats((s) => ({ ...s, skipped: s.skipped + 1 }));
-        return;
+        return schedule(intervalMs);
       }
       if (!limiter.allow(now)) {
         setStats((s) => ({ ...s, dropped: s.dropped + 1, calls: limiter.used(now) }));
-        return;
+        return schedule(intervalMs);
       }
       lastSeq.current = frame.seq;
       pending.current = true;
@@ -144,13 +155,13 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
         if (alive) setStats((s) => ({ ...s, error: (e as Error).message }));
       } finally {
         pending.current = false;
+        schedule(NEXT_FRAME_MS);
       }
     };
-    const id = setInterval(tick, Math.max(1000, intervalMs));
     void tick();
     return () => {
       alive = false;
-      clearInterval(id);
+      clearTimeout(timer);
     };
   }, [running, sourceId, domain, intervalMs, limiter, write]);
 

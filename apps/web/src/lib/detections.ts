@@ -23,7 +23,9 @@ export interface DetectionState {
   updatedAt: number;
 }
 
-const STALE_FRAMES = 4;
+const STALE_FRAMES = 2;
+/** Boxes older than this are dropped even if no newer frame contradicted them (camera paused, hub stalled). */
+const STALE_MS = 6000;
 const EMPTY: DetectionState = { items: [], frame: null, sourceId: "", processed: 0, updatedAt: 0 };
 let state: DetectionState = EMPTY;
 const listeners = new Set<() => void>();
@@ -37,7 +39,7 @@ export function recordDetections(items: InventoryItem[], seq: number, sourceId: 
   for (const prev of state.items) {
     const fresh = seen.get(keyOf(prev));
     if (fresh) continue;
-    if (prev.misses + 1 < STALE_FRAMES) next.push({ ...prev, misses: prev.misses + 1 });
+    if (prev.misses + 1 < STALE_FRAMES && now - prev.at < STALE_MS) next.push({ ...prev, misses: prev.misses + 1 });
   }
   for (const it of items) next.push({ ...it, seq, at: now, misses: 0 });
   state = { items: next, frame: frame ?? state.frame, sourceId, processed: state.processed + 1, updatedAt: now };

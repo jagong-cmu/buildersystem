@@ -50,7 +50,8 @@ export function FrameOverlay({
             const boxes = d.boxes?.length ? d.boxes : [d.bbox!];
             const hot = highlight?.has(keyOf(d)) || (highlight && d.color && highlight.has(`${d.partType}|`));
             const faded = dimOthers && highlight && !hot;
-            const showLabel = labels !== "highlight" || hot;
+            // One label per part (on its first box); stale boxes keep their outline but lose the label.
+            const showLabel = (labels !== "highlight" || hot) && !d.misses;
             const color = hot ? "var(--accent)" : "var(--info)";
             const name = `${d.color ? `${d.color} ` : ""}${partLabel(domain, d.partType)}`;
             return boxes.map((bbox, i) => {
@@ -65,17 +66,18 @@ export function FrameOverlay({
                   width: r.w,
                   height: r.h,
                   border: `${hot ? 3 : 2}px solid ${color}`,
-                  opacity: faded ? 0.35 : d.misses ? 0.6 : 1,
+                  opacity: faded ? 0.35 : d.misses ? 0.4 : 1,
+                  borderStyle: d.misses ? "dashed" : "solid",
                   boxShadow: hot ? `0 0 0 2px color-mix(in srgb, ${color} 35%, transparent)` : undefined,
                   transition: "left .35s ease, top .35s ease, width .35s ease, height .35s ease, opacity .3s ease",
                 }}
               >
-                {showLabel && <span
-                  className={`absolute left-0 ${i % 2 ? "-bottom-5" : "-top-5"} whitespace-nowrap px-1.5 py-0.5 rounded text-[11px] font-medium`}
+                {showLabel && i === 0 && <span
+                  className="absolute left-0 -top-5 whitespace-nowrap px-1.5 py-0.5 rounded text-[11px] font-medium"
                   style={{ background: color, color: "#111", maxWidth: `max(${Math.round(r.w)}px, 7rem)`, overflow: "hidden", textOverflow: "ellipsis" }}
                   title={name}
                 >
-                  {boxes.length > 1 ? `${name} · ${i + 1}/${boxes.length}` : `${d.qty} × ${name}`}
+                  {`${d.qty} × ${name}`}
                 </span>}
               </div>
             );

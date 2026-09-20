@@ -102,3 +102,21 @@ export function setRequirements(set: LegoSet): Requirement[] {
 export function setInventoryItems(set: LegoSet): InventoryItem[] {
   return setRequirements(set).map((r) => ({ ...r, conf: 1 }));
 }
+
+/** How many of the set's pieces the inventory accounts for (each element capped at its set quantity). */
+export function setCoverage(set: LegoSet, items: InventoryItem[], colorAware: boolean): number {
+  const key = (part: string, color?: string) => (colorAware ? `${part}|${color ?? ""}` : part);
+  const have = new Map<string, number>();
+  for (const it of items) {
+    const k = key(it.partType, it.color);
+    have.set(k, (have.get(k) ?? 0) + it.qty);
+  }
+  let found = 0;
+  for (const el of set.elements) {
+    const k = key(`lego:${el.part}`, el.color);
+    const n = Math.min(el.qty, have.get(k) ?? 0);
+    found += n;
+    have.set(k, (have.get(k) ?? 0) - n);
+  }
+  return found;
+}

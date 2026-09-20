@@ -1,8 +1,22 @@
 import { getPlugin } from "@/domains";
 import type { DomainPlugin } from "@/core/plugin";
 import type { DomainId, Inventory, InventoryItem } from "@/core/types";
-import { inventoryPrompt, inventorySchema, makeInventory } from "@/core/inventory";
+import sharp from "sharp";
+import { inventoryPrompt, inventorySchema, makeInventory, sanitizeItems } from "@/core/inventory";
 import { VISION_MOCK, imageHash, visionObject } from "@/lib/vision";
+
+/** Long edge sent to the vision model; larger frames only add upload time and latency. */
+const MAX_EDGE = 1024;
+
+/** Downscale and re-encode a frame for vision (EXIF orientation applied). Normalized boxes are unaffected. */
+export async function prepareImage(img: InventoryImage): Promise<InventoryImage> {
+  try {
+    const data = await sharp(Buffer.from(img.data)).rotate().resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+    return { data: new Uint8Array(data), mediaType: "image/jpeg" };
+  } catch {
+    return img;
+  }
+}
 
 export interface InventoryImage {
   data: Uint8Array;
@@ -23,9 +37,10 @@ export async function detectInventory(
     schema: inventorySchema(plugin),
     system: inventoryPrompt(plugin),
     text: text ?? "Identify the parts on the table.",
-    images,
+    images: await Promise.all(images.map(prepareImage)),
+    fast: true,
   });
-  return makeInventory(domain, out.items, sourceId);
+  return makeInventory(domain, sanitizeItems(out.items), sourceId);
 }
 
 function mockItems(plugin: DomainPlugin, seed: number): InventoryItem[] {

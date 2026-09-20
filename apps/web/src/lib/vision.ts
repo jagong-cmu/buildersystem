@@ -48,6 +48,8 @@ export async function visionObject<S extends z.ZodTypeAny>(opts: {
   text: string;
   images: { data: Uint8Array; mediaType: string }[];
   model?: string;
+  /** Latency-sensitive call (live scan): disable model thinking where the provider supports it. */
+  fast?: boolean;
 }): Promise<z.infer<S>> {
   const model = visionModel(opts.model);
   if (!model) throw new Error("No vision provider configured: set AI_GATEWAY_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or ANTHROPIC_API_KEY in apps/web/.env.local");
@@ -55,6 +57,7 @@ export async function visionObject<S extends z.ZodTypeAny>(opts: {
     model,
     output: Output.object({ schema: opts.schema }),
     system: opts.system,
+    ...(opts.fast ? { providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } } } : {}),
     messages: [
       {
         role: "user",

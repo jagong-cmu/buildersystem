@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { makeInventory } from "@/core/inventory";
 import { rankManuals } from "@/core/matcher";
-import type { Manual, Match, MatchStatus } from "@/core/types";
+import type { Inventory, Manual, Match, MatchStatus } from "@/core/types";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
+import { LEGO_SETS, type LegoSet, setCoverage, setInventoryItems } from "@/domains/lego/sets";
 import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { useLiveInventory } from "./useLiveInventory";
@@ -17,7 +19,7 @@ const BUCKET: Record<MatchStatus, { title: string; blurb: string }> = {
 
 export function BuildsView({ manuals }: { manuals: Manual[] }) {
   const [domain] = useDomain();
-  const [inventory] = useInventory(domain);
+  const [inventory, setInventory] = useInventory(domain);
   const [colorAware, setColorAware] = useState<boolean>(MATCH_DEFAULTS[domain].colorAware);
   const plugin = PLUGINS[domain];
   const [liveOn, setLiveOn] = useBuildsLivePref();
@@ -57,6 +59,7 @@ export function BuildsView({ manuals }: { manuals: Manual[] }) {
           No inventory yet. <Link href="/scan" className="underline">Scan the table</Link> or add parts by hand.
         </div>
       )}
+      {domain === "lego" && LEGO_SETS.map((set) => <SetPanel key={set.id} set={set} inventory={inventory} colorAware={colorAware} onLoad={setInventory} />)}
       {(["buildable", "with-subs", "missing"] as MatchStatus[]).map((status) => {
         const group = matches.filter((m) => m.status === status);
         if (!group.length) return null;
@@ -74,6 +77,27 @@ export function BuildsView({ manuals }: { manuals: Manual[] }) {
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/** A known boxed set: shows how much of it the scan found and can load its full parts list. */
+function SetPanel({ set, inventory, colorAware, onLoad }: { set: LegoSet; inventory: Inventory; colorAware: boolean; onLoad: (inv: Inventory) => void }) {
+  const found = setCoverage(set, inventory.items, colorAware);
+  const loaded = inventory.sourceId === `set:${set.id}`;
+  return (
+    <div className="panel p-4 flex flex-wrap items-center gap-3 text-sm">
+      <div>
+        <div className="font-semibold">LEGO {set.id} · {set.name}</div>
+        <div className="muted">
+          {loaded ? `full ${set.pieces}-piece inventory loaded` : `scan found ${found} of ${set.pieces} pieces${colorAware ? "" : " (any color)"}`}
+        </div>
+      </div>
+      {!loaded && (
+        <button className="btn primary ml-auto" onClick={() => onLoad(makeInventory("lego", setInventoryItems(set), `set:${set.id}`))} title="Replace the scanned inventory with the complete parts list of this set">
+          I have this set
+        </button>
+      )}
     </div>
   );
 }
@@ -101,6 +125,11 @@ function BuildCard({ match, manual }: { match: Match; manual: Manual }) {
       </div>
       <div className="flex flex-wrap gap-1.5">
         {match.status === "buildable" && <span className="chip ok">uses {Math.round(match.utilization * 100)}% of your parts</span>}
+        {match.status === "missing" && (() => {
+          const need = manual.requires.reduce((s, r) => s + r.qty, 0);
+          const short = match.missing.reduce((s, r) => s + r.qty, 0);
+          return <span className="chip muted">have {need - short} of {need} parts</span>;
+        })()}
         {match.subs.map((s, i) => (
           <span key={i} className="chip info" title={s.note}>
             ↔ {reqLabel(manual.domain, s.produces)} ← {s.consumes.map((c) => reqLabel(manual.domain, c)).join(" + ")}
