@@ -16,7 +16,7 @@ function bands(ohms: number): string[] {
 
 function Part({ inst, phase }: { inst: PartInstance<BoardPlacement>; phase: Phase }) {
   if (phase === "hidden") return null;
-  const op = phase === "ghost" ? 0.35 : 1;
+  const op = phase === "ghost" ? 0.85 : 1;
   const glow = phase === "current" ? "url(#glow)" : undefined;
   const pl = inst.placement;
   if (pl.kind === "wire") {
@@ -24,7 +24,7 @@ function Part({ inst, phase }: { inst: PartInstance<BoardPlacement>; phase: Phas
     const [x2, y2] = endXY(pl.to);
     const d = wirePath(pl.from, pl.to);
     return (
-      <g opacity={op} filter={glow}>
+      <g className="part" opacity={op} filter={glow}>
         <path d={d} fill="none" stroke={WIRE_COLORS[inst.color ?? ""] ?? "#9ad"} strokeWidth={4} strokeLinecap="round" pathLength={1} className={phase === "current" ? "wire-draw" : undefined} />
         <circle cx={x1} cy={y1} r={4} fill="#ccc" />
         <circle cx={x2} cy={y2} r={4} fill="#ccc" />
@@ -38,7 +38,7 @@ function Part({ inst, phase }: { inst: PartInstance<BoardPlacement>; phase: Phas
   const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
   const ohms = Number(inst.partType.match(/resistor_(\d+)(k?)/)?.[1] ?? 0) * (inst.partType.endsWith("k") ? 1000 : 1);
   return (
-    <g opacity={op} filter={glow}>
+    <g className={`part${phase === "current" ? " pop" : ""}`} opacity={op} filter={glow}>
       {pts.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r={4.5} fill="#bbb" />
       ))}
@@ -116,6 +116,9 @@ export function BreadboardRenderer({ manual, step, registerSnapshot }: RendererP
           @keyframes draw { to { stroke-dashoffset: 0; } }
           .pulse { animation: pulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
           @keyframes pulse { 0%,100% { transform: scale(1); opacity: .9 } 50% { transform: scale(1.8); opacity: .3 } }
+          .part { transition: opacity .4s ease; }
+          .pop { animation: pop .45s cubic-bezier(.22,1,.36,1) both; transform-box: fill-box; transform-origin: center; }
+          @keyframes pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
         `}</style>
       </defs>
       {/* breadboard body */}
