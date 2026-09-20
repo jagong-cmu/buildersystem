@@ -18,7 +18,7 @@ body { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif
 .mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
-.chip { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .55rem; border-radius: 999px; font-size: .75rem; border: 1px solid var(--line); background: var(--panel-2); }
+.chip { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .55rem; border-radius: 999px; font-size: .75rem; border: 1px solid var(--line); background: var(--panel-2); max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
 .chip.ok { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
 .chip.warn { border-color: color-mix(in srgb, var(--warn) 50%, transparent); color: var(--warn); }
 .chip.info { border-color: color-mix(in srgb, var(--info) 50%, transparent); color: var(--info); }
@@ -64,7 +64,7 @@ html { scroll-behavior: smooth; }
 @media (max-width: 640px) { .tally { top: 4rem; width: 11rem; max-height: 40%; } .tally-list { padding-bottom: .35rem; } }
 .live-pip { position: absolute; right: 1rem; top: 4rem; width: 22rem; max-width: 45%; z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
 .live-expanded { position: absolute; right: 1rem; top: 4rem; width: min(56rem, calc(100% - 20rem)); max-height: calc(100% - 16rem); z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
-@media (max-width: 640px) { .live-expanded { left: 1rem; right: 1rem; width: auto; } }
+@media (max-width: 640px) { .live-expanded { left: 1rem; right: 1rem; width: auto; } .tally.feed-open { display: none; } }
 @media (max-width: 480px) { .tally { width: min(11rem, calc(52% - 1.5rem)); } }
 
 .dot { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; margin-left: .35rem; background: var(--muted); }

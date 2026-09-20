@@ -9,7 +9,8 @@
     "test": "vitest run",
     "sim": "tsx scripts/glasses-sim.mts",
     "record": "tsx scripts/record.mts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "replay": "tsx scripts/replay.mts"
   },
   "dependencies": {
     "sharp": "^0.34.5",
