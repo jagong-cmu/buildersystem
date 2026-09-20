@@ -205,12 +205,20 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
         <div className="absolute inset-0">
           <Renderer manual={manual as never} step={active} direction={direction} registerSnapshot={registerSnapshot} />
         </div>
-        <div className="absolute left-3 top-3 flex gap-2 items-center">
-          <span className="chip">step {active} / {manual.steps.length}</span>
-          {active > 0 && <span className="chip muted">{manual.steps[active - 1].title}</span>}
+        <div className="progress">
+          <div className="progress-fill" style={{ width: `${(active / manual.steps.length) * 100}%` }} />
+        </div>
+        <div className="absolute inset-x-0 top-0 p-3 flex items-center gap-3 pointer-events-none">
+          <div className="viewport-title">
+            <span className="mono muted text-xs">STEP {active}/{manual.steps.length}</span>
+            <span className="font-medium">{active > 0 ? manual.steps[active - 1].title : manual.title}</span>
+          </div>
+          <button className="btn sm ml-auto pointer-events-auto" onClick={() => setLive((l) => !l)}>
+            {live ? "hide live" : "live"}
+          </button>
         </div>
         {banner && (banner.until > Date.now() || banner.unresolved.length > 0) && (
-          <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10 panel px-4 py-2 text-sm shadow-xl">
+          <div className={`plan-banner panel px-4 py-2 text-sm shadow-xl ${banner.until <= Date.now() && banner.unresolved.length === 0 ? "plan-banner--leaving" : ""}`}>
             {banner.until > Date.now() && <div className="font-medium">Plan updated from step {banner.fromStep}</div>}
             {banner.until > Date.now() && banner.subs.map((sub, i) => <div key={i} className="muted text-xs">{sub.note}</div>)}
             {banner.unresolved.length > 0 && (
@@ -223,19 +231,17 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
             )}
           </div>
         )}
-        <div className="absolute right-3 top-3 flex gap-2">
-          <button className="btn sm" onClick={() => setLive((l) => !l)}>
-            {live ? "hide live" : "live"}
-          </button>
-        </div>
         {live && (
           <div className="absolute right-3 bottom-3 w-64 shadow-xl">
             <LiveFeed compact />
           </div>
         )}
-        <div className="absolute left-3 bottom-3 flex gap-2">
-          <button className="btn sm" onClick={() => scrollTo(Math.max(0, active - 1))}>← prev</button>
-          <button className="btn sm" onClick={() => scrollTo(Math.min(manual.steps.length, active + 1))}>next →</button>
+        <div className="absolute bottom-3 inset-x-0 flex flex-col items-center gap-1">
+          <div className="flex gap-2">
+            <button className="btn sm" disabled={active === 0} onClick={() => scrollTo(Math.max(0, active - 1))}>← prev</button>
+            <button className="btn sm" disabled={active === manual.steps.length} onClick={() => scrollTo(Math.min(manual.steps.length, active + 1))}>next →</button>
+          </div>
+          <span className="muted text-xs">scroll or press j / k</span>
         </div>
       </div>
 
@@ -260,8 +266,8 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
             <span className="chip">~{manual.estMinutes} min</span>
             <span className={`chip ${match.status === "buildable" ? "ok" : match.status === "with-subs" ? "info" : "warn"}`}>{match.status}</span>
           </div>
-          <div>
-            <div className="text-sm font-medium mb-1">Parts</div>
+          <details open={match.status !== "buildable"}>
+            <summary className="text-sm font-medium cursor-pointer">Parts · {manual.requires.length}</summary>
             <ul className="text-sm grid sm:grid-cols-2 gap-x-4">
               {manual.requires.map((r, i) => {
                 const h = have(r.partType, r.color);
@@ -275,7 +281,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
                 );
               })}
             </ul>
-          </div>
+          </details>
           {match.subs.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {match.subs.map((s, i) => (
@@ -283,7 +289,6 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
               ))}
             </div>
           )}
-          <div className="muted text-xs">Scroll, or press j / k. The view on the left follows the active step.</div>
         </header>
 
         {manual.steps.map((s) => {
@@ -293,14 +298,14 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
             <section
               key={s.n}
               ref={(el) => { cards.current[s.n] = el; }}
-              className="panel p-4 space-y-3 scroll-mt-[38vh] transition-colors"
-              style={isActive ? { borderColor: "var(--accent)" } : undefined}
+              className={`step-card panel p-4 space-y-3 scroll-mt-[38vh]${isActive ? " is-active" : ""}${v === "verified" ? " is-done" : ""}`}
             >
               <div className="flex items-center gap-3">
-                <span className="mono text-sm rounded-md px-2 py-0.5" style={{ background: isActive ? "var(--accent)" : "var(--panel-2)", color: isActive ? "#111" : "inherit" }}>{s.n}</span>
+                <span className={`step-num${isActive ? " active" : ""}${v === "verified" ? " done" : ""}`}>{v === "verified" ? "✓" : s.n}</span>
                 <h2 className="font-semibold">{s.title}</h2>
                 {v !== "pending" && <span className={`chip ${BADGE[v].cls} ml-auto`}>{BADGE[v].label}</span>}
               </div>
+              <p className="step-text">{s.text}</p>
               {s.callouts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {s.callouts.map((c, i) => (
@@ -308,29 +313,29 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
                   ))}
                 </div>
               )}
-              <details>
-                <summary className="cursor-pointer text-sm muted">Missing a part?</summary>
-                <div className="flex flex-wrap gap-1.5 pt-2">
-                  {s.callouts.map((callout, i) => (
-                    <button key={i} className="btn sm" onClick={() => reportMissing(s.n, callout)}>{reqLabel(manual.domain, callout)}</button>
-                  ))}
-                </div>
-              </details>
-              <p>{s.text}</p>
               {s.expected.probes?.length ? (
                 <div className="muted text-xs mono">
                   probes: {s.expected.probes.map((p) => `${p.pin} ${p.mode}${p.expect.min !== undefined ? ` ∈ [${p.expect.min}, ${p.expect.max}]` : p.expect.value !== undefined ? ` = ${p.expect.value}` : ""}`).join(" · ")}
                 </div>
               ) : null}
               {verify[s.n]?.hint && <div className="muted text-sm">{verify[s.n].hint}</div>}
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button className="btn sm" disabled={v === "checking"} onClick={() => check(s.n)}>Check</button>
-                <button className="btn sm" onClick={() => markDone(s.n)}>Mark done</button>
+                <button className={`btn sm${isActive ? " primary" : ""}`} onClick={() => markDone(s.n)}>Mark done</button>
+                <details className="ml-auto relative">
+                  <summary className="cursor-pointer text-xs muted">Missing a part?</summary>
+                  <div className="absolute right-0 mt-1 z-20 panel p-2 flex flex-wrap gap-1.5 min-w-48">
+                    {s.callouts.map((callout, i) => (
+                      <button key={i} className="btn sm" onClick={() => reportMissing(s.n, callout)}>{reqLabel(manual.domain, callout)}</button>
+                    ))}
+                  </div>
+                </details>
               </div>
             </section>
           );
         })}
         <div className="panel p-4 text-center muted">Done. Put it to use.</div>
+        <div aria-hidden className="h-[55vh]" />
       </div>
     </div>
   );
