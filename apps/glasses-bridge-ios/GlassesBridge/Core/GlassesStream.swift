@@ -275,7 +275,7 @@ final class GlassesStream: ObservableObject {
 
     /// Turns a `DeviceSessionError` into something the wearer can act on. The
     /// SDK's own text for the DAM start failure is just "Device unavailable".
-    static func explain(sessionError error: Error) -> String {
+    nonisolated static func explain(sessionError error: Error) -> String {
         let raw = String(describing: error)
         guard let sessionError = error as? DeviceSessionError else { return raw }
         switch sessionError {
