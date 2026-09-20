@@ -1,0 +1,62 @@
+0 Taco (11039)
+0 Name: model.ldr
+0 Author: LEGO Classic 11039 Creative Food Friends (demo booklet)
+0 !RC TITLE Shell base
+0 !RC TEXT Place a yellow 4x4 quarter-circle plate with the curve towards the front right.
+1 14 40 -8 0 1 0 0 0 1 0 0 0 1 30565.dat
+0 STEP
+0 !RC TITLE Spine
+0 !RC TEXT Lay the yellow 1x8 brick along the back row so it overhangs four studs to the left.
+1 14 0 -32 -30 1 0 0 0 1 0 0 0 1 3008.dat
+0 STEP
+0 !RC TITLE Second shell
+0 !RC TEXT Slide the second quarter-circle plate under the overhang, curve towards the front left.
+1 14 -40 -8 0 0 0 -1 0 1 0 1 0 0 30565.dat
+0 STEP
+0 !RC TITLE Lettuce and tomato
+0 !RC TEXT A lime 1x4 brick centred on the second row, with a red 1x1 round plate at each end of the row.
+1 27 0 -32 -10 1 0 0 0 1 0 0 0 1 3010.dat
+1 4 -50 -32 -10 1 0 0 0 1 0 0 0 1 28626.dat
+1 4 50 -32 -10 1 0 0 0 1 0 0 0 1 28626.dat
+0 STEP
+0 !RC TITLE Filling and eye mounts
+0 !RC TEXT A coral 1x2 brick centred on the third row with a white 1x1 side-stud brick either side, studs facing front.
+1 353 0 -32 10 1 0 0 0 1 0 0 0 1 3004.dat
+1 15 -30 -32 10 1 0 0 0 1 0 0 0 1 87087.dat
+1 15 30 -32 10 1 0 0 0 1 0 0 0 1 87087.dat
+0 STEP
+0 !RC TITLE Melting toppings
+0 !RC TEXT A lime and a reddish brown 1x1 double-curved brick standing on the side studs.
+1 27 -30 -20 36 0 0 -1 1 0 0 0 -1 0 49307.dat
+1 70 30 -20 36 0 0 -1 1 0 0 0 -1 0 49307.dat
+0 STEP
+0 !RC TITLE Salsa
+0 !RC TEXT Centre the red 1x2 curved brick on the front row, curving forward.
+1 4 0 -32 30 1 0 0 0 1 0 0 0 1 37352.dat
+0 STEP
+0 !RC TITLE Greens
+0 !RC TEXT A bright green leaf plate on each front corner, leaves fanning outward.
+1 10 -50 -16 30 0.7071 0 -0.7071 0 1 0 0.7071 0 0.7071 32607.dat
+1 10 50 -16 30 0.7071 0 0.7071 0 1 0 -0.7071 0 0.7071 32607.dat
+0 STEP
+0 !RC TITLE Onion
+0 !RC TEXT A white 1x1 round plate on each leaf plate.
+1 15 -50 -24 30 1 0 0 0 1 0 0 0 1 28626.dat
+1 15 50 -24 30 1 0 0 0 1 0 0 0 1 28626.dat
+0 STEP
+0 !RC TITLE More greens
+0 !RC TEXT Two more bright green leaf plates on top of those.
+1 10 -50 -32 30 0.7071 0 -0.7071 0 1 0 0.7071 0 0.7071 32607.dat
+1 10 50 -32 30 0.7071 0 0.7071 0 1 0 -0.7071 0 0.7071 32607.dat
+0 STEP
+0 !RC TITLE Top shells
+0 !RC TEXT Two yellow quarter-circle plates on top, curves towards the front corners.
+1 14 -40 -56 0 0 0 -1 0 1 0 1 0 0 30565.dat
+1 14 40 -56 0 1 0 0 0 1 0 0 0 1 30565.dat
+0 STEP
+0 !RC TITLE Face
+0 !RC TEXT The yellow 1x2 jumper plate centred on the back row and a white closed-eye tile on the second row, either side of centre.
+1 14 0 -64 -30 1 0 0 0 1 0 0 0 1 15573.dat
+1 15 -30 -64 -10 1 0 0 0 1 0 0 0 1 102763.dat
+1 15 30 -64 -10 1 0 0 0 1 0 0 0 1 102763.dat
+0 STEP

@@ -4,10 +4,10 @@ import { loadLibrary } from "../library";
 import { getPlugin } from "@/domains";
 
 describe("thumbnailSvg", () => {
-  it("produces a non-empty, well-formed SVG for all 8 manuals", async () => {
+  it("produces a non-empty, well-formed SVG for all 16 manuals", async () => {
     const { manuals, errors } = await loadLibrary();
     expect(errors).toEqual([]);
-    expect(manuals.length).toBe(8);
+    expect(manuals.length).toBe(16);
     for (const m of manuals) {
       const thumb = getPlugin(m.domain).thumbnailSvg;
       expect(thumb, `${m.domain} has thumbnailSvg`).toBeDefined();
