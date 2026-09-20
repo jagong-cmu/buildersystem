@@ -5,7 +5,7 @@ import { PLUGINS } from "@/domains";
 import { withQty } from "@/lib/inventory-store";
 import { LDRAW_COLORS } from "@/domains/lego/vocabulary";
 
-const LEGO_COLORS = ["red", "blue", "yellow", "white", "black", "green", "bright green", "lime", "coral", "reddish brown", "medium azure", "tan", "trans clear", "trans orange", "light gray"];
+const LEGO_COLORS = ["red", "blue", "yellow", "white", "black", "green", "bright green", "lime", "coral", "bright pink", "reddish brown", "medium azure", "tan", "trans clear", "trans orange", "light gray"];
 
 /**
  * Editable inventory (PRD §5.2): the demo must never be blocked by a misdetection.
@@ -104,6 +104,7 @@ export function cssColor(name: string): string {
     "bright green": "#4b9f4a",
     lime: "#bbe90b",
     coral: "#ff698f",
+    "bright pink": "#e4adc8",
     "reddish brown": "#582a12",
     "medium azure": "#36aebf",
     "trans clear": "#e0f0f7",

@@ -88,9 +88,11 @@ export function inventoryPrompt(plugin: DomainPlugin): string {
  */
 export function aggregateFrames(frames: InventoryItem[][], minFrames = 1): InventoryItem[] {
   const best = new Map<string, InventoryItem & { n: number; confSum: number }>();
-  for (const items of frames)
+  const seenIn = new Map<string, Set<number>>();
+  frames.forEach((items, f) => {
     for (const it of items) {
       const k = `${it.partType}|${it.color ?? ""}`;
+      (seenIn.get(k) ?? seenIn.set(k, new Set()).get(k)!).add(f);
       const cur = best.get(k);
       if (!cur) best.set(k, { ...it, n: 1, confSum: it.conf });
       else {
@@ -107,7 +109,10 @@ export function aggregateFrames(frames: InventoryItem[][], minFrames = 1): Inven
         else cur.attrs = it.attrs;
       }
     }
-  return [...best.values()].filter((it) => it.n >= minFrames).map(({ n, confSum, ...it }) => ({ ...it, conf: confSum / n }));
+  });
+  return [...best.entries()]
+    .filter(([k]) => (seenIn.get(k)?.size ?? 0) >= minFrames)
+    .map(([, { n, confSum, ...it }]) => ({ ...it, conf: confSum / n }));
 }
 
 export function sumFrames(frames: InventoryItem[][]): InventoryItem[] {
