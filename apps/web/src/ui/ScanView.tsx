@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import type { Inventory, PartType } from "@/core/types";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { useDetections, recordDetections } from "@/lib/detections";
-import { coverageHint } from "@/lib/live-inventory";
+import { coverageHint, mergeWithPins } from "@/lib/live-inventory";
 import { DOMAIN_LABEL, partLabel } from "@/lib/format";
 import { postInventory } from "@/lib/inventory-client";
 import { usePrimarySource } from "@/lib/sources";
@@ -27,7 +27,7 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
   const [lastFrame, setLastFrame] = useState<Blob | null>(null);
   const { source, glassesOnline } = usePrimarySource();
   const detections = useDetections();
-  const live = useLiveInventory({ domain, enabled: true });
+  const live = useLiveInventory({ domain, enabled: true, sourceId });
   const { status } = live;
 
   async function recognize(blob: Blob, sourceId: string) {
@@ -45,9 +45,9 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
     }
   }
 
-  /** Explicit scan/snap/upload results also feed the overlay. */
+  /** Explicit scan/snap/upload results also feed the overlay; pinned hand edits stay. */
   function applyResult(inv: Inventory) {
-    setInventory(inv);
+    setInventory({ ...inv, items: mergeWithPins(inv.items, inventory.items, status.pinned) });
     recordDetections(inv.items, inv.frameSeqs?.at(-1) ?? -1, inv.sourceId);
   }
 
@@ -62,8 +62,8 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
   const title = feedOnline ? (status.frozen ? "Frozen — press Resume to keep looking" : "Looking at your parts…") : "Nothing to look at yet";
 
   return (
-    <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 p-5 max-w-7xl mx-auto">
-      <section className="space-y-3">
+    <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 p-5 max-w-7xl mx-auto min-w-0">
+      <section className="space-y-3 min-w-0">
         <div className="flex items-baseline gap-3 flex-wrap">
           <h1 className="text-xl font-semibold">{title}</h1>
           <span className="muted text-sm">{DOMAIN_LABEL[domain]}</span>
@@ -103,8 +103,8 @@ export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: Pa
         </div>
         {domain === "fabric" && <ScrapMeasure frame={lastFrame} inventory={inventory} onChange={edit} />}
       </section>
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
+      <section className="space-y-3 min-w-0">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <h2 className="text-lg font-semibold">Inventory</h2>
           <div className="flex items-center gap-2">
             {status.pinned.size > 0 && (
@@ -142,8 +142,8 @@ function LiveStatus({
   }, []);
   const age = status.lastUpdateAt ? Math.max(0, Math.round((now - status.lastUpdateAt) / 1000)) : null;
   return (
-    <div className="flex items-center gap-3 flex-wrap text-sm">
-      <span className="muted">
+    <div className="flex items-center gap-3 flex-wrap text-sm min-w-0">
+      <span className="muted break-words min-w-0">
         processed {status.processed} frames · last update {age == null ? "—" : `${age}s ago`}
         {status.dropped > 0 && <> · {status.dropped} over cap</>}
         <span title="vision calls in the last minute"> · {status.callsThisMinute}/{status.maxPerMinute} calls/min</span>

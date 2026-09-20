@@ -211,7 +211,7 @@ function fmt(v: number): string {
 
 async function analyze(blob: Blob): Promise<Frame> {
   const url = URL.createObjectURL(blob);
-  const img = await loadImage(url);
+  const img = await loadImage(url).finally(() => URL.revokeObjectURL(url));
   const scale = Math.min(1, DETECT_MAX_W / img.naturalWidth);
   const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
   const canvas = document.createElement("canvas");

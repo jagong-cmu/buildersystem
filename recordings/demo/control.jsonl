@@ -1,0 +1,8 @@
+{"at": 1789892505092, "msg": {"type": "nav", "path": "/scan"}}
+{"at": 1789892505592, "msg": {"type": "scan.start", "source": "glasses", "seconds": 6}}
+{"at": 1789892513092, "msg": {"type": "nav", "path": "/builds"}}
+{"at": 1789892517092, "msg": {"type": "nav", "path": "/guide/phone_stand"}}
+{"at": 1789892521092, "msg": {"type": "next"}}
+{"at": 1789892525092, "msg": {"type": "where"}}
+{"at": 1789892528092, "msg": {"type": "check"}}
+{"at": 1789892535092, "msg": {"type": "next"}}
