@@ -1,6 +1,11 @@
 // Prompt variants for the promptfoo vision eval. Each export receives the test vars and returns the
 // full system prompt. `baseline` is exactly what production sends (src/core/inventory.ts); the other
 // variants append hints. When a variant wins, fold it into inventoryPrompt and it becomes the baseline.
+//
+// History (gemini-3.5-flash-lite, 17 cases, mean F1 / exact-qty):
+//   original prompt                     0.67 / 0.53  (x2 runs)
+//   + colors, plate-height hint         0.73 / 0.59
+//   + strict "fully visible only", side-wall plate rule, loose-thread hint   0.78-0.81 / 0.74  (x3 runs) -> folded in
 import { getPlugin } from "../../src/domains";
 import type { DomainId } from "../../src/core/types";
 import { inventoryPrompt } from "../../src/core/inventory";
@@ -15,25 +20,13 @@ const withExtra = (ctx: PromptContext, extra: Partial<Record<DomainId, string>>)
 
 export const baseline = (ctx: PromptContext) => withExtra(ctx, {});
 
-export const colorsAndPlates = (ctx: PromptContext) =>
+export const twoPass = (ctx: PromptContext) =>
   withExtra(ctx, {
-    lego: [
-      "Also allowed colors: lime, dark green, dark blue, medium blue, dark red, brown, pink, purple, sand green. Use the closest listed name; never invent compound names.",
-      "Plates are one third the height of a brick (a 2x4 plate is flat and thin; a 2x4 brick is tall). Decide brick vs plate from height before counting studs.",
-    ].join("\n"),
+    lego: "Work in two passes: first list each distinct (type, color) you can see clearly, then count instances of each one at a time, scanning left to right.",
+    breadboard: "Work in two passes: first list each distinct component type, then count instances of each.",
   });
 
-export const countCarefully = (ctx: PromptContext) =>
+export const perColorPlates = (ctx: PromptContext) =>
   withExtra(ctx, {
-    lego: [
-      "Also allowed colors: lime, dark green, dark blue, medium blue, dark red, brown, pink, purple, sand green.",
-      "Plates are one third the height of a brick. Decide brick vs plate from height before counting studs.",
-      "Count in two passes: first list each distinct (type, color) you see, then count instances of each one at a time, scanning left to right. Count studs along both edges to determine size (e.g. 2 studs by 4 studs = 2x4). Only count pieces whose stud layout you can actually see.",
-    ].join("\n"),
-    breadboard: [
-      "Count in two passes: first list each distinct component type, then count instances of each. Do not count a component that is mounted on a board as a separate loose part unless it clearly is one.",
-    ].join("\n"),
-    fabric: [
-      "Also report spools of thread, zippers, buttons and other notions in the vocabulary even when no fabric scrap is present.",
-    ].join("\n"),
+    lego: "Report one item per (type, color) pair; pieces of the same type in different colors are separate items. Double-check the color of each piece individually rather than assuming they match.",
   });

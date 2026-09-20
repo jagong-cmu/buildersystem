@@ -21,7 +21,7 @@ export default class InventoryVisionProvider {
   constructor(options: ProviderOptions = {}) {
     this.model = options.config?.model;
     this.providerId = options.id ?? `inventory-vision:${this.model ?? "default"}`;
-    this.maxAttempts = options.config?.maxAttempts ?? 6;
+    this.maxAttempts = options.config?.maxAttempts ?? 3;
   }
 
   id() {

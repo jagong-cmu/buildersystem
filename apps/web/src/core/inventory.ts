@@ -28,12 +28,19 @@ export function inventorySchema(plugin: DomainPlugin) {
 export function inventoryPrompt(plugin: DomainPlugin): string {
   const vocab = plugin.vocabulary.map((p) => `- ${p.id}: ${p.name} — ${p.visionHint}`).join("\n");
   const domainNotes: Record<DomainId, string> = {
-    lego:
-      "Count each brick type per color. Report color names in lowercase (red, blue, yellow, white, black, green, light gray, dark gray, tan, orange). Count carefully; when unsure between two types, prefer the more common one and lower the confidence.",
-    breadboard:
+    lego: [
+      "Count each brick type per color. Report color names in lowercase (red, blue, yellow, white, black, green, lime, dark green, dark blue, medium blue, dark red, brown, pink, purple, sand green, light gray, dark gray, tan, orange). Use the closest listed name; never invent compound names.",
+      "Brick vs plate: look at the side wall. A brick's side is about three times as tall as a stud; a plate's side is barely taller than its studs. A 2x2 piece with a low side is 3022 (plate), not 3003 (brick). Decide height first, then count studs along both edges.",
+      "Only report pieces that are fully visible and whose type and color you can identify with certainty. Skip occluded, partially hidden, or unusual pieces entirely rather than guessing. In a pile this usually means reporting only a handful of pieces; never report more instances of a type than you can individually point to.",
+    ].join("\n"),
+    breadboard: [
       "Count discrete components. Read resistor color bands to pick the value; if unreadable, choose the closest vocabulary value with low confidence. Count jumper wires individually. Report the board and breadboard if present.",
-    fabric:
+      "Do not count a component that is mounted on a board as a separate loose part unless it clearly is one.",
+    ].join("\n"),
+    fabric: [
       "Each fabric scrap is one item with qty 1 and its outline as polygonMm (use the printed marker mat, 40 mm squares, for scale). Classify the fabric. For a zipper, report attrs.lengthMm.",
+      "Thread may appear as a spool or as loose, tangled strands; either way report one fab:thread item (qty 1, no polygon). Also report zippers, buttons and other notions even when no fabric scrap is present.",
+    ].join("\n"),
   };
   return [
     `You are the inventory scanner for a ${plugin.id} build assistant. Identify every part visible on the table.`,
