@@ -75,6 +75,12 @@ function BuildCard({ match, manual }: { match: Match; manual: Manual }) {
   const usable = match.status !== "missing";
   return (
     <div className="panel p-4 flex flex-col gap-3">
+      {manual.thumbnail && (
+        <div className="rounded-md overflow-hidden" style={{ background: "#0f1318", border: "1px solid var(--line)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={manual.thumbnail} alt={`${manual.title} thumbnail`} className="w-full h-36 object-contain" />
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="font-semibold">{manual.title}</div>

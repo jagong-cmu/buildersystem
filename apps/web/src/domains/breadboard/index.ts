@@ -1,10 +1,12 @@
 import type { DomainPlugin } from "@/core/plugin";
 import type { BoardPlacement, Requirement } from "@/core/types";
+import { thumbnailSvg } from "./thumbnail";
 import { loadBreadboardManual } from "./loader";
 import { BREADBOARD_SUBS } from "./subs";
 import { BREADBOARD_PARTS, bbPartName } from "./vocabulary";
 
 export const breadboardPlugin: DomainPlugin<BoardPlacement> = {
+  thumbnailSvg,
   id: "breadboard",
   vocabulary: BREADBOARD_PARTS,
   loadManual: loadBreadboardManual,

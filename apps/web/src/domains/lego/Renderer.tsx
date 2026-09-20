@@ -8,16 +8,8 @@ import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { RendererProps } from "@/core/plugin";
 import type { LegoPlacement, PartInstance } from "@/core/types";
+import { COLORS, dimsOf } from "./dims";
 
-/** studs along X, studs along Z, height in LDU. */
-const DIMS: Record<string, [number, number, number]> = {
-  "3001": [4, 2, 24], "3003": [2, 2, 24], "3010": [4, 1, 24], "3004": [2, 1, 24], "3005": [1, 1, 24],
-  "3034": [8, 2, 8], "3020": [4, 2, 8], "3022": [2, 2, 8], "3710": [4, 1, 8], "3023": [2, 1, 8],
-};
-const COLORS: Record<number, string> = {
-  0: "#1b1b1b", 1: "#0055bf", 2: "#237841", 4: "#c91a09", 14: "#f2cd37", 15: "#f4f4f4", 19: "#e4cd9e", 25: "#fe8a18",
-  26: "#c870a0", 27: "#bbe90b", 70: "#582a12", 71: "#a0a5a9", 72: "#6c6e68", 320: "#720e0f", 321: "#078bc9", 322: "#36aebf",
-};
 const FLY_IN_LDU = 72; // three bricks above the target
 const FLY_IN_S = 0.6;
 
@@ -29,7 +21,7 @@ function ldrawMatrix(p: LegoPlacement): THREE.Matrix4 {
 }
 
 function Brick({ inst, phase, animateKey }: { inst: PartInstance<LegoPlacement>; phase: Phase; animateKey: number }) {
-  const [sx, sz, h] = DIMS[inst.placement.ldrawPart] ?? [2, 2, 24];
+  const [sx, sz, h] = dimsOf(inst.placement.ldrawPart);
   const color = COLORS[inst.placement.ldrawColor] ?? "#888";
   const matrix = useMemo(() => ldrawMatrix(inst.placement), [inst.placement]);
   const outer = useRef<THREE.Group>(null);
@@ -115,7 +107,7 @@ export function LegoRenderer({ manual, step, direction, registerSnapshot }: Rend
     for (const p of manual.parts) {
       const n = stepOf.get(p.id) ?? 0;
       if (n > step) continue;
-      const [sx, sz, h] = DIMS[p.placement.ldrawPart] ?? [2, 2, 24];
+      const [sx, sz, h] = dimsOf(p.placement.ldrawPart);
       const m = ldrawMatrix(p.placement);
       const local = new THREE.Box3(new THREE.Vector3(-sx * 10, 0, -sz * 10), new THREE.Vector3(sx * 10, h, sz * 10)).applyMatrix4(m);
       box.union(local);

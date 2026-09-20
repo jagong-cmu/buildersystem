@@ -7,3 +7,4 @@ dist
 *.log
 manuals.index.json
 .gstack/
+apps/web/public/manuals/

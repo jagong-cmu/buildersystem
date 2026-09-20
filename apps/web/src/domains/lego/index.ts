@@ -1,10 +1,12 @@
 import type { DomainPlugin } from "@/core/plugin";
 import type { LegoPlacement, Requirement } from "@/core/types";
+import { thumbnailSvg } from "./thumbnail";
 import { loadLegoManual } from "./loader";
 import { LEGO_SUBS } from "./subs";
 import { LEGO_PARTS, COLOR_TO_LDRAW } from "./vocabulary";
 
 export const legoPlugin: DomainPlugin<LegoPlacement> = {
+  thumbnailSvg,
   id: "lego",
   vocabulary: LEGO_PARTS,
   loadManual: loadLegoManual,

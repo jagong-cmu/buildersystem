@@ -53,6 +53,8 @@ export interface DomainPlugin<P = unknown> {
   substitutions: SubstitutionRule<P>[];
   feasibility?(inv: Inventory, m: Manual<P>): Feasibility;
   commerce?(missing: Requirement[]): CartLink[];
+  /** Small final-state SVG for build cards (PRD §5.3); written to public/manuals/<domain>/<id>/thumb.svg by the index script. */
+  thumbnailSvg?(manual: Manual<P>): string;
 }
 
 /** UI-side extension; kept separate so the index script never imports React. */
