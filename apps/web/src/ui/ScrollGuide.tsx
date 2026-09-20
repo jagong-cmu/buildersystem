@@ -33,7 +33,8 @@ interface PlanBanner {
 interface SavedBuild {
   url?: string;
   qrSvg?: string;
-  failed: string[];
+  error?: string;
+  failed: { name: string; error: string }[];
 }
 
 export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: boolean }) {
@@ -238,6 +239,11 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       });
       const body = (await response.json()) as SavedBuild & { error?: string };
       if (!response.ok) throw new Error(body.error ?? `save failed (${response.status})`);
+      if (!body.url) {
+        setSaved(null);
+        setSaveError(body.error ?? "Upload failed");
+        return;
+      }
       setSaved(body);
     } catch (error) {
       setSaveError((error as Error).message);

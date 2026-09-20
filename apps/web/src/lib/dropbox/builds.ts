@@ -30,6 +30,11 @@ export interface BuildFile {
   contents: string | Uint8Array;
 }
 
+export interface BuildUploadFailure {
+  name: string;
+  error: string;
+}
+
 export interface BuildUploadClient {
   filesUpload(arg: { path: string; contents: string | Uint8Array; mode?: { ".tag": "overwrite" } }): Promise<unknown>;
   sharingCreateSharedLinkWithSettings(arg: { path: string }): Promise<{ result?: { url?: string } }>;
@@ -68,15 +73,24 @@ function isSharedLinkConflict(error: unknown) {
   return (error as { status?: number }).status === 409 || JSON.stringify(error).includes("shared_link_already_exists");
 }
 
+function errorString(error: unknown) {
+  const summary = (error as { error?: { error_summary?: unknown } })?.error?.error_summary;
+  return typeof summary === "string" ? summary : error instanceof Error ? error.message : String(error);
+}
+
 export async function writeBuildRecord(dbx: BuildUploadClient, record: BuildRecord, files: BuildFile[]) {
-  const failed: string[] = [];
+  const failed: BuildUploadFailure[] = [];
   const ordered = [...files].sort((a, b) => Number(a.name === "result.json") - Number(b.name === "result.json"));
   for (const file of ordered) {
     try {
       await withRetry(() => dbx.filesUpload({ path: `${recordPath(record)}/${file.name}`, contents: file.contents, mode: { ".tag": "overwrite" } }));
-    } catch {
-      failed.push(file.name);
+    } catch (error) {
+      failed.push({ name: file.name, error: errorString(error) });
     }
+  }
+
+  if (files.length > 0 && failed.length === files.length) {
+    return { path: recordPath(record), url: undefined, error: failed[0].error, failed };
   }
 
   let url: string | undefined;
@@ -86,11 +100,11 @@ export async function writeBuildRecord(dbx: BuildUploadClient, record: BuildReco
     if (isSharedLinkConflict(error)) {
       try {
         url = (await withRetry(() => dbx.sharingListSharedLinks({ path: recordPath(record), direct_only: true }))).result?.links?.[0]?.url;
-      } catch {
-        failed.push("shared link");
+      } catch (listError) {
+        failed.push({ name: "shared link", error: errorString(listError) });
       }
     } else {
-      failed.push("shared link");
+      failed.push({ name: "shared link", error: errorString(error) });
     }
   }
   return { path: recordPath(record), url, failed };

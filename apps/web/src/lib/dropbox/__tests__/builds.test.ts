@@ -54,7 +54,7 @@ describe("Dropbox build records", () => {
       filesUpload: async ({ path }: { path: string }) => {
         calls.push(path);
         if (path.endsWith("manual.json")) {
-          throw Object.assign(new Error("temporary"), { status: 500 });
+          throw Object.assign(new Error("temporary"), { status: 500, error: { error_summary: "internal_error/..." } });
         }
       },
       sharingCreateSharedLinkWithSettings: async () => {
@@ -68,7 +68,32 @@ describe("Dropbox build records", () => {
       { name: "result.json", contents: "{}" },
     ]);
     expect(calls.map((call) => call.split("/").pop())).toEqual(["README.md", "manual.json", "manual.json", "manual.json", "manual.json", "result.json"]);
-    expect(result.failed).toEqual(["manual.json"]);
+    expect(result.failed).toEqual([{ name: "manual.json", error: "internal_error/..." }]);
     expect(result.url).toBe("https://dropbox.example/build");
+  });
+
+  it("skips shared-link creation when every file fails", async () => {
+    let sharedLinkCalls = 0;
+    const dbx = {
+      filesUpload: async () => {
+        throw Object.assign(new Error("no write access"), { status: 400 });
+      },
+      sharingCreateSharedLinkWithSettings: async () => {
+        sharedLinkCalls++;
+        return { result: { url: "https://dropbox.example/build" } };
+      },
+      sharingListSharedLinks: async () => ({ result: { links: [] } }),
+    };
+    const result = await writeBuildRecord(dbx, record, [
+      { name: "README.md", contents: "readme" },
+      { name: "result.json", contents: "{}" },
+    ]);
+    expect(sharedLinkCalls).toBe(0);
+    expect(result.url).toBeUndefined();
+    expect(result.error).toBe("no write access");
+    expect(result.failed).toEqual([
+      { name: "README.md", error: "no write access" },
+      { name: "result.json", error: "no write access" },
+    ]);
   });
 });
