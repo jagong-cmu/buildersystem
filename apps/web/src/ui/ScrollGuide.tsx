@@ -150,10 +150,14 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
     if (bannerTimer.current) clearTimeout(bannerTimer.current);
   }, []);
 
-  // Deep link + keyboard.
   useEffect(() => {
     const n = Number(new URLSearchParams(window.location.search).get("step"));
-    if (n > 0) setTimeout(() => scrollTo(n), 150);
+    if (!(n > 0)) return;
+    const timer = setTimeout(() => scrollTo(n), 150);
+    return () => clearTimeout(timer);
+  }, [scrollTo]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
       if (e.key === "j" || e.key === "ArrowDown") {
@@ -218,7 +222,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
           </button>
         </div>
         {banner && (banner.until > Date.now() || banner.unresolved.length > 0) && (
-          <div className={`plan-banner panel px-4 py-2 text-sm shadow-xl ${banner.until <= Date.now() && banner.unresolved.length === 0 ? "plan-banner--leaving" : ""}`}>
+          <div className="plan-banner panel px-4 py-2 text-sm shadow-xl">
             {banner.until > Date.now() && <div className="font-medium">Plan updated from step {banner.fromStep}</div>}
             {banner.until > Date.now() && banner.subs.map((sub, i) => <div key={i} className="muted text-xs">{sub.note}</div>)}
             {banner.unresolved.length > 0 && (
