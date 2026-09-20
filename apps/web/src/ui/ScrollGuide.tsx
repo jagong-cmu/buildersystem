@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchManual } from "@/core/matcher";
 import { replan } from "@/core/replan";
-import type { BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
+import type { AppliedSub, BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
 import { hardwareVerifier } from "@/domains/breadboard/verifiers";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
 import { RENDERERS } from "@/domains/renderers";
@@ -30,7 +30,13 @@ interface PlanBanner {
   until: number;
 }
 
-export function ScrollGuide({ initial }: { initial: Manual }) {
+interface SavedBuild {
+  url?: string;
+  qrSvg?: string;
+  failed: string[];
+}
+
+export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: boolean }) {
   const [manual, setManual] = useState(initial);
   const plugin = PLUGINS[manual.domain];
   const Renderer = RENDERERS[manual.domain];
@@ -48,6 +54,11 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
   const verifyRef = useRef(verify);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [banner, setBanner] = useState<PlanBanner | null>(null);
+  const [subs, setSubs] = useState<AppliedSub[]>(match.subs);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<SavedBuild | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const startedAt = useRef(Date.now());
   const registerSnapshot = useCallback((fn: () => Promise<Blob | null>) => {
     snapshot.current = fn;
   }, []);
@@ -110,6 +121,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
       MATCH_DEFAULTS[manual.domain],
     );
     setManual(result.manual);
+    setSubs(result.subs);
     if (bannerTimer.current) clearTimeout(bannerTimer.current);
     setBanner({ fromStep: result.fromStep, unresolved: result.unresolved, subs: result.subs, until: Date.now() + 6000 });
     bannerTimer.current = setTimeout(() => {
@@ -181,6 +193,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
         const hardware = await hardwareVerifier.verify(manual.id, manual.steps[step - 1] as Step<BoardPlacement>, { hubHttp: HUB_HTTP });
         if (hardware.status !== "unsure") {
           setVerify((v) => ({ ...v, [step]: hardware }));
+          captureStepEvidence(step);
           return;
         }
       }
@@ -197,10 +210,43 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
       setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "unsure", hint: (e as Error).message } }));
     }
   }
+  function captureStepEvidence(step: number) {
+    fetch("/api/evidence", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ manualId: manual.id, step, armedAt: armedAt.current[step] }),
+    }).then(async (response) => {
+      if (!response.ok) return;
+      const body = (await response.json()) as { evidence?: VerifyResult["evidence"] };
+      if (body.evidence) setVerify((current) => ({ ...current, [step]: { ...current[step], evidence: body.evidence } }));
+    }).catch(() => {});
+  }
   function markDone(step: number) {
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "verified", hint: "marked by builder" } }));
+    captureStepEvidence(step);
     if (step < manual.steps.length) scrollTo(step + 1);
   }
+
+  async function saveBuild() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const response = await fetch("/api/dropbox/builds", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ manualId: manual.id, manualSnapshot: manual, verify, subs, startedAt: startedAt.current }),
+      });
+      const body = (await response.json()) as SavedBuild & { error?: string };
+      if (!response.ok) throw new Error(body.error ?? `save failed (${response.status})`);
+      setSaved(body);
+    } catch (error) {
+      setSaveError((error as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const allVerified = manual.steps.length > 0 && manual.steps.every((step) => verify[step.n]?.status === "verified");
 
   return (
     <div className="grid lg:grid-cols-[1.25fr_1fr] gap-0 max-w-7xl mx-auto">
@@ -254,6 +300,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
         <header ref={(el) => { cards.current[0] = el; }} className="panel p-4 space-y-3 scroll-mt-[38vh]">
           <div className="flex items-center gap-2 text-sm muted">
             <Link href="/builds" className="underline">builds</Link> · {DOMAIN_LABEL[manual.domain]}
+            {dropbox && !saved && <button className="btn sm ml-auto" disabled={saving} onClick={saveBuild}>{saving ? "Saving…" : "Save build"}</button>}
           </div>
           <div className="flex items-start gap-3">
             {manual.thumbnail && (
@@ -338,7 +385,26 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
             </section>
           );
         })}
-        <div className="panel p-4 text-center muted">Done. Put it to use.</div>
+        <div className="panel p-4 text-center muted space-y-3">
+          <div>Done. Put it to use.</div>
+          {dropbox && allVerified && !saved && (
+            <div className="panel p-3 text-left space-y-2">
+              <div className="font-medium">Save this build to Dropbox?</div>
+              <div className="flex items-center gap-2">
+                <button className="btn primary sm" disabled={saving} onClick={saveBuild}>{saving ? "Saving…" : "Save build"}</button>
+                {saveError && <span className="chip warn">{saveError}</span>}
+              </div>
+            </div>
+          )}
+          {saved && (
+            <div className="panel p-3 text-left space-y-2">
+              <div className="font-medium">Build saved to Dropbox</div>
+              {saved.url && <a className="underline break-all" href={saved.url} target="_blank" rel="noreferrer">{saved.url}</a>}
+              {saved.qrSvg && <div className="w-40 h-40 bg-white p-2" dangerouslySetInnerHTML={{ __html: saved.qrSvg }} />}
+              {saved.failed.length > 0 && <div className="chip warn">{saved.failed.length} files failed</div>}
+            </div>
+          )}
+        </div>
         <div aria-hidden className="h-[55vh]" />
       </div>
     </div>
