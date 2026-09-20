@@ -37,11 +37,16 @@ final class GlassesStream: ObservableObject {
     let socket = FrameSocket()
 
     private let wearables: WearablesInterface
-    private let deviceSelector: AutoDeviceSelector
+    /// Long-lived (it resolves asynchronously; see start()), but rebuilt when it
+    /// goes stale: after a link drop + reconnect it never re-resolves.
+    private var deviceSelector: AutoDeviceSelector
     private var registrationTask: Task<Void, Never>?
     private var devicesTask: Task<Void, Never>?
     private var deviceListenerTokens: [DeviceIdentifier: [AnyListenerToken]] = [:]
 
+    private let phoneCamera = PhoneCamera()
+    /// True while the phone's own camera (not the glasses) is the producer.
+    @Published private(set) var usingPhoneCamera = false
     private var session: DeviceSession?
     private var camera: Camera?
     private var tokens = ListenerTokenBag()
@@ -163,12 +168,21 @@ final class GlassesStream: ObservableObject {
             }
 
             if deviceSelector.activeDevice == nil {
-                let problem = eligibilityProblem()
-                let selector = deviceSelector
-                try await withTimeout(seconds: 5, or: StreamError.noEligibleDevice(problem)) {
-                    for await device in selector.activeDeviceStream() where device != nil { return }
-                    throw StreamError.noEligibleDevice(problem)
+                // Two passes: the existing selector, then a fresh one. The SDK's
+                // AutoDeviceSelector goes stale after the glasses drop and
+                // reconnect (it never re-resolves), which otherwise needs an
+                // app restart even though the device reads connected+compatible.
+                var picked = false
+                for attempt in 0 ..< 2 {
+                    if attempt == 1 { deviceSelector = AutoDeviceSelector(wearables: wearables) }
+                    let selector = deviceSelector
+                    picked = await withTimeoutOrNil(seconds: 5) {
+                        for await device in selector.activeDeviceStream() where device != nil { return true }
+                        return false
+                    } ?? false
+                    if picked { break }
                 }
+                if !picked { throw StreamError.noEligibleDevice(eligibilityProblem()) }
             }
 
             let session: DeviceSession
@@ -257,9 +271,66 @@ final class GlassesStream: ObservableObject {
         }
     }
 
+    /// Like withTimeout but yields nil on expiry instead of throwing.
+    private func withTimeoutOrNil<T: Sendable>(seconds: Double, _ body: @escaping @Sendable () async -> T) async -> T? {
+        await withTaskGroup(of: T?.self) { group in
+            group.addTask { await body() }
+            group.addTask { try? await Task.sleep(for: .seconds(seconds)); return nil }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+    }
+
+    /// Photos pushed as single frames this session (shown in the UI).
+    @Published private(set) var photosSent = 0
+
+    /// Still-photo path: push one picked/taken photo to the hub as a frame. The
+    /// laptop's /scan treats it like any new frame — runs vision, merges the
+    /// inventory — with no live stream involved. Works alongside a stream too.
+    func sendPhoto(_ image: UIImage, endpoints: HubEndpoints, sourceId: String, maxWidth: Double, quality: Double) async {
+        lastError = nil
+        if phase == .idle || phase.isError {
+            pipeline.configure(sourceId: sourceId, maxFps: 10, maxWidth: CGFloat(maxWidth), quality: CGFloat(quality))
+        }
+        if socket.state != .open {
+            socket.connect(to: endpoints.produce(source: sourceId))
+            for _ in 0 ..< 50 where socket.state != .open { try? await Task.sleep(for: .milliseconds(100)) }
+            guard socket.state == .open else { lastError = "hub socket didn't open — check the Hub URL"; return }
+        }
+        pipeline.ingest(force: true) { image }
+        photosSent += 1
+        if phase == .idle { streamState = "photo sent" }
+    }
+
+    /// Demo fallback: stream the phone's back camera as the same source id.
+    func startPhoneCamera(endpoints: HubEndpoints, sourceId: String, maxFps: Double, maxWidth: Double, quality: Double) async {
+        guard phase == .idle || phase.isError else { return }
+        phase = .starting
+        lastError = nil
+        pipeline.configure(sourceId: sourceId, maxFps: maxFps, maxWidth: CGFloat(maxWidth), quality: CGFloat(quality))
+        socket.connect(to: endpoints.produce(source: sourceId))
+        UIApplication.shared.isIdleTimerDisabled = true
+        do {
+            try await phoneCamera.start(into: pipeline)
+            usingPhoneCamera = true
+            streamState = "phone camera"
+            phase = .streaming
+        } catch PhoneCamera.CameraError.denied {
+            lastError = "Camera permission for GlassesBridge was denied in iOS Settings."
+            await stop()
+            phase = .error(lastError ?? "failed")
+        } catch {
+            lastError = "phone camera: \(error.localizedDescription)"
+            await stop()
+            phase = .error(lastError ?? "failed")
+        }
+    }
+
     func stop() async {
         if phase == .idle { return }
         phase = .stopping
+        if usingPhoneCamera { phoneCamera.stop(); usingPhoneCamera = false }
         tokens.clear()
         tokens = ListenerTokenBag()
         camera?.stop()
@@ -361,6 +432,18 @@ final class FramePipeline: @unchecked Sendable {
     }
 
     func ingest(_ frame: VideoFrame) {
+        ingest { frame.makeUIImage() }
+    }
+
+    /// Any source that can produce a UIImage on demand (the closure runs on the
+    /// encode queue only for admitted frames, so rejected frames cost nothing).
+    func ingest(makeImage: @escaping @Sendable () -> UIImage?) {
+        ingest(force: false, makeImage: makeImage)
+    }
+
+    /// `force` bypasses the fps throttle and the busy check: a still photo must
+    /// never be dropped the way a redundant live frame is.
+    func ingest(force: Bool, makeImage: @escaping @Sendable () -> UIImage?) {
         let capturedAt = Date()
         let now = capturedAt.timeIntervalSince1970
         // Admission is decided on the SDK's thread so frames are dropped, never
@@ -374,6 +457,7 @@ final class FramePipeline: @unchecked Sendable {
                 fpsWindowStart = now
                 fpsCount = 0
             }
+            if force { return true }
             guard !busy, throttle.admit(now: now) else { return false }
             busy = true
             return true
@@ -381,8 +465,8 @@ final class FramePipeline: @unchecked Sendable {
         if let fps { onSourceFps?(fps) }
         guard admitted else { return }
         queue.async { [self] in
-            defer { lock.withLock { busy = false } }
-            guard let image = frame.makeUIImage() else { return }
+            defer { if !force { lock.withLock { busy = false } } }
+            guard let image = makeImage() else { return }
             let target = fitWidth(image.size, maxWidth: maxWidth)
             let scaled: UIImage
             if target == image.size {

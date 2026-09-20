@@ -10,9 +10,15 @@ struct GlassesBridgeApp: App {
     @StateObject private var mock = MockGlassesController()
 
     init() {
-        // Must run before anything touches Wearables.shared. In the Simulator
-        // the Mock Device Kit is enabled from the UI (Developer section).
-        try? Wearables.configure()
+        // Must run before anything touches Wearables.shared (Meta's docs:
+        // configure() first, then MockDeviceKit.enable() in the Simulator).
+        // A failure here is fatal on the first `Wearables.shared` access, so
+        // never swallow it silently.
+        do {
+            try Wearables.configure()
+        } catch {
+            print("[GlassesBridge] Wearables.configure() failed: \(error) (\(error.description))")
+        }
         _stream = StateObject(wrappedValue: GlassesStream())
     }
 

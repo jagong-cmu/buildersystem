@@ -15,9 +15,12 @@ export function PhoneSource() {
 
   useEffect(() => {
     // Remember the hub URL per phone; the laptop's LAN IP changes between venues.
+    // `?hub=wss://…` wins so a QR code / pasted link needs no typing on the phone.
     try {
+      const fromUrl = new URLSearchParams(window.location.search).get("hub");
       const saved = localStorage.getItem("rc:hub");
-      if (saved) setHub(saved);
+      if (fromUrl) setHub(fromUrl);
+      else if (saved) setHub(saved);
     } catch {}
   }, []);
 

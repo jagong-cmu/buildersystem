@@ -14,7 +14,7 @@ final class MockGlassesController: ObservableObject {
         var id: String { rawValue }
     }
 
-    @Published private(set) var enabled = false
+    @Published private(set) var enabled = MockDeviceKit.shared.isEnabled
     @Published private(set) var paired = false
     @Published private(set) var worn = false
     @Published var feed: Feed = .phoneBack
@@ -24,9 +24,15 @@ final class MockGlassesController: ObservableObject {
 
     static let available = true
 
-    func enable() {
-        guard !enabled else { return }
+    /// Idempotent: the kit trips `Wearables.shared` internally, so it must
+    /// only ever run after `Wearables.configure()` (see GlassesBridgeApp).
+    static func enableKit() {
+        guard !MockDeviceKit.shared.isEnabled else { return }
         MockDeviceKit.shared.enable(config: MockDeviceKitConfig(initiallyRegistered: true, initialPermissionsGranted: true))
+    }
+
+    func enable() {
+        Self.enableKit()
         enabled = true
         status = "Mock kit on (registered, camera permission granted)"
     }
