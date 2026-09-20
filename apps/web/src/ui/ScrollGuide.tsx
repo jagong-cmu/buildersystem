@@ -113,7 +113,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const total = manual.steps.length;
 
   const goTo = useCallback((i: number) => {
-    const next = Math.max(0, Math.min(total, i));
+    const next = Number.isFinite(i) ? Math.max(0, Math.min(total, Math.trunc(i))) : 0;
     setActive((prev) => {
       if (prev !== next) setDirection(next > prev ? "forward" : "back");
       return next;
@@ -158,6 +158,11 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     sendControl({ type: "say", text: `Plan updated from step ${result.fromStep}.` });
   }, [have, inventory, manual, plugin, goTo]);
 
+  const latestGoTo = useRef(goTo);
+  useEffect(() => {
+    latestGoTo.current = goTo;
+  }, [goTo]);
+
   const latestReportMissing = useRef(reportMissing);
   useEffect(() => {
     latestReportMissing.current = reportMissing;
@@ -185,6 +190,13 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
         if (step != null) void latestCheck.current(step, true);
         return;
       }
+      if (msg.type === "next") return latestGoTo.current(activeRef.current + 1);
+      if (msg.type === "prev") return latestGoTo.current(activeRef.current - 1);
+      if (msg.type === "check") {
+        const step = typeof msg.step === "number" && msg.step > 0 ? msg.step : activeRef.current;
+        if (step > 0 && !autoVerify.current.checking) void latestCheck.current(step);
+        return;
+      }
       if (msg.type !== "part.missing" || typeof msg.partType !== "string") return;
       const verified = Object.entries(verifyRef.current)
         .filter(([, result]) => result.status === "verified")
@@ -208,7 +220,8 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     const timer = setTimeout(() => {
       const saved = readProgress(initial.id);
       if (saved) {
-        setActive(Math.max(0, Math.min(initial.steps.length, saved.active)));
+        const fromUrl = Number(new URLSearchParams(window.location.search).get("step"));
+        if (!(fromUrl > 0)) setActive(Number.isFinite(saved.active) ? Math.max(0, Math.min(initial.steps.length, Math.trunc(saved.active))) : 0);
         setVerify(saved.verify ?? {});
       }
       progressLoaded.current = true;
