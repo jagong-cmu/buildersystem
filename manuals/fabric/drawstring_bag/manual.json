@@ -1,0 +1,15 @@
+{
+  "pieces": [
+    { "id": "panel", "polygonMm": [[0,0],[200,0],[200,260],[0,260]], "fabricClass": "fab:cotton_woven", "qty": 2 }
+  ],
+  "notions": [ { "partType": "fab:cord", "qty": 1, "minLengthMm": 900 }, { "partType": "fab:thread", "qty": 1 } ],
+  "steps": [
+    { "kind": "cut", "pieces": ["panel"], "text": "Cut two 200 × 260 mm panels." },
+    { "kind": "fold", "pieces": ["panel"], "text": "Fold the top edge of each panel down 30 mm and press to form the casing." },
+    { "kind": "sew", "seam": { "a": ["panel_1", "casing"], "b": ["panel_1", "casing"] }, "text": "Stitch each casing 25 mm from the fold, leaving the ends open." },
+    { "kind": "pin", "pieces": ["panel"], "text": "Pin the panels right sides together below the casings." },
+    { "kind": "sew", "seam": { "a": ["panel_1", "sides+bottom"], "b": ["panel_2", "sides+bottom"] }, "text": "Sew down both sides and across the bottom." },
+    { "kind": "turn", "text": "Turn right side out and press." },
+    { "kind": "attach", "notion": "fab:cord", "text": "Thread the cord through both casings with a safety pin and knot the ends." }
+  ]
+}

@@ -1,0 +1,20 @@
+0 Small Bridge
+0 Name: model.ldr
+0 !RC TITLE Left pier
+0 !RC TEXT Stack two red 2x2 bricks for the left pier.
+1 4 -60 -24 0 1 0 0 0 1 0 0 0 1 3003.dat
+1 4 -60 -48 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Right pier
+0 !RC TEXT Stack two red 2x2 bricks for the right pier, 8 studs away.
+1 4 60 -24 0 1 0 0 0 1 0 0 0 1 3003.dat
+1 4 60 -48 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Deck
+0 !RC TEXT Bridge the piers with a blue 2x8 plate.
+1 1 0 -56 0 1 0 0 0 1 0 0 0 1 3034.dat
+0 STEP
+0 !RC TITLE Railings
+0 !RC TEXT Add a blue 1x4 brick along each edge of the deck.
+1 1 0 -80 -10 1 0 0 0 1 0 0 0 1 3010.dat
+1 1 0 -80 10 1 0 0 0 1 0 0 0 1 3010.dat

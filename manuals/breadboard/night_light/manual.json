@@ -1,0 +1,25 @@
+{
+  "board": "uno",
+  "parts": [
+    { "id": "ldr1", "partType": "bb:photoresistor", "pins": [ { "row": "e", "col": 10 }, { "row": "e", "col": 14 } ] },
+    { "id": "r1", "partType": "bb:resistor_10k", "pins": [ { "row": "d", "col": 14 }, { "row": "d", "col": 18 } ] },
+    { "id": "led1", "partType": "bb:led_red", "pins": [ { "row": "e", "col": 22 }, { "row": "e", "col": 23 } ], "polarity": ["anode", "cathode"] },
+    { "id": "r2", "partType": "bb:resistor_220", "pins": [ { "row": "d", "col": 23 }, { "row": "gnd", "col": 23 } ] }
+  ],
+  "wires": [
+    { "id": "w0", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },
+    { "id": "w1", "from": { "board": "5V" }, "to": { "row": "a", "col": 10 }, "color": "red" },
+    { "id": "w2", "from": { "row": "a", "col": 14 }, "to": { "board": "A0" }, "color": "blue" },
+    { "id": "w3", "from": { "row": "a", "col": 18 }, "to": { "row": "gnd", "col": 18 }, "color": "black" },
+    { "id": "w4", "from": { "board": "D9" }, "to": { "row": "a", "col": 22 }, "color": "yellow" }
+  ],
+  "steps": [
+    { "title": "Ground rail", "add": ["w0"], "text": "Connect the board's GND to the breadboard's ground rail." },
+    { "title": "Photoresistor", "add": ["ldr1", "w1"], "text": "Place the photoresistor across e10–e14 and wire 5V to a10." },
+    { "title": "Divider", "add": ["r1", "w2", "w3"], "text": "Add the 10kΩ resistor from d14 to d18, wire a14 to A0, and a18 to the ground rail.",
+      "probes": [ { "pin": "A0", "mode": "analogRead", "expect": { "min": 100, "max": 950 }, "note": "LDR divider mid-range in room light" } ] },
+    { "title": "LED", "add": ["led1", "r2", "w4"], "text": "LED at e22/e23 (long leg at 22), 220Ω from d23 to ground, D9 to a22.",
+      "probes": [ { "pin": "D9", "mode": "pulse", "expect": { "value": 1 }, "note": "LED should blink; camera confirms" } ] }
+  ],
+  "sketch": "night_light.ino"
+}

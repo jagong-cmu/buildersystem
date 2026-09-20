@@ -1,0 +1,129 @@
+{
+  "pieces": [
+    {
+      "id": "front",
+      "polygonMm": [
+        [
+          0,
+          0
+        ],
+        [
+          200,
+          0
+        ],
+        [
+          200,
+          140
+        ],
+        [
+          0,
+          140
+        ]
+      ],
+      "fabricClass": "fab:cotton_woven",
+      "qty": 1
+    },
+    {
+      "id": "back",
+      "polygonMm": [
+        [
+          0,
+          0
+        ],
+        [
+          200,
+          0
+        ],
+        [
+          200,
+          140
+        ],
+        [
+          0,
+          140
+        ]
+      ],
+      "fabricClass": "fab:cotton_woven",
+      "qty": 1
+    }
+  ],
+  "notions": [
+    {
+      "partType": "fab:zipper",
+      "qty": 1,
+      "minLengthMm": 180
+    },
+    {
+      "partType": "fab:thread",
+      "qty": 1
+    }
+  ],
+  "steps": [
+    {
+      "kind": "cut",
+      "pieces": [
+        "front",
+        "back"
+      ],
+      "text": "Cut two 200 \u00d7 140 mm rectangles (10 mm seam allowance included)."
+    },
+    {
+      "kind": "attach",
+      "notion": "fab:zipper",
+      "text": "Lay the zipper face down on the top edge of the front piece.",
+      "pieces": [
+        "front"
+      ]
+    },
+    {
+      "kind": "sew",
+      "seam": {
+        "a": [
+          "front",
+          "top"
+        ],
+        "b": [
+          "zipper",
+          "top"
+        ]
+      },
+      "text": "Sew the zipper to the top edge of the front, 7 mm from the teeth."
+    },
+    {
+      "kind": "sew",
+      "seam": {
+        "a": [
+          "back",
+          "top"
+        ],
+        "b": [
+          "zipper",
+          "bottom"
+        ]
+      },
+      "text": "Sew the other zipper tape to the top edge of the back."
+    },
+    {
+      "kind": "fold",
+      "text": "Open the zipper halfway. Fold so the front and back are right sides together."
+    },
+    {
+      "kind": "sew",
+      "seam": {
+        "a": [
+          "front",
+          "sides+bottom"
+        ],
+        "b": [
+          "back",
+          "sides+bottom"
+        ]
+      },
+      "text": "Sew down both sides and across the bottom."
+    },
+    {
+      "kind": "turn",
+      "text": "Clip corners, turn right side out through the zipper, press."
+    }
+  ]
+}

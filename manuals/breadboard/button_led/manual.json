@@ -1,0 +1,23 @@
+{
+  "board": "uno",
+  "parts": [
+    { "id": "led1", "partType": "bb:led_red", "pins": [ { "row": "e", "col": 22 }, { "row": "e", "col": 23 } ], "polarity": ["anode", "cathode"] },
+    { "id": "r1", "partType": "bb:resistor_220", "pins": [ { "row": "d", "col": 23 }, { "row": "gnd", "col": 23 } ] },
+    { "id": "btn1", "partType": "bb:pushbutton", "pins": [ { "row": "e", "col": 10 }, { "row": "e", "col": 12 }, { "row": "f", "col": 10 }, { "row": "f", "col": 12 } ] }
+  ],
+  "wires": [
+    { "id": "w1", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },
+    { "id": "w2", "from": { "board": "D9" }, "to": { "row": "a", "col": 22 }, "color": "yellow" },
+    { "id": "w3", "from": { "board": "D2" }, "to": { "row": "a", "col": 10 }, "color": "green" },
+    { "id": "w4", "from": { "row": "a", "col": 12 }, "to": { "row": "gnd", "col": 12 }, "color": "black" }
+  ],
+  "steps": [
+    { "title": "Ground rail", "add": ["w1"], "text": "Connect the board's GND to the breadboard's ground rail." },
+    { "title": "LED + resistor", "add": ["led1", "r1"], "text": "Seat the red LED in e22/e23 (long leg at 22) and run the 220Ω resistor from d23 to the ground rail." },
+    { "title": "LED signal", "add": ["w2"], "text": "Wire D9 to a22." },
+    { "title": "Button", "add": ["btn1"], "text": "Straddle the pushbutton across the center gap at columns 10 and 12." },
+    { "title": "Button wiring", "add": ["w3", "w4"], "text": "Wire D2 to a10 and a12 to the ground rail. The sketch uses the internal pull-up.",
+      "probes": [ { "pin": "D2", "mode": "digitalRead", "expect": { "value": 1 }, "note": "idle HIGH with pull-up; LOW when pressed" } ] }
+  ],
+  "sketch": "button_led.ino"
+}

@@ -1,0 +1,34 @@
+0 Phone Stand
+0 Name: model.ldr
+0 Author: Reality Compiler sample
+0 !RC TITLE Base row
+0 !RC TEXT Place two red 2x4 bricks end to end to form the 2x8 base.
+1 4 -40 -24 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 4 40 -24 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+0 !RC TITLE Second row, staggered
+0 !RC TEXT Center a red 2x4 on top, then cap each end with a red 2x2 so the joints are staggered.
+1 4 0 -48 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 4 -60 -48 0 1 0 0 0 1 0 0 0 1 3003.dat
+1 4 60 -48 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Front lip
+0 !RC TEXT Lay two blue 1x4 plates along the front edge. The phone will rest against this lip.
+1 1 -40 -56 -10 1 0 0 0 1 0 0 0 1 3710.dat
+1 1 40 -56 -10 1 0 0 0 1 0 0 0 1 3710.dat
+0 STEP
+0 !RC TITLE Back wall, row 1
+0 !RC TEXT Stand two blue 1x4 bricks along the back edge.
+1 1 -40 -72 10 1 0 0 0 1 0 0 0 1 3010.dat
+1 1 40 -72 10 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Back wall, row 2
+0 !RC TEXT Center a blue 1x4 on the wall and finish each end with a blue 1x2.
+1 1 0 -96 10 1 0 0 0 1 0 0 0 1 3010.dat
+1 1 -60 -96 10 1 0 0 0 1 0 0 0 1 3004.dat
+1 1 60 -96 10 1 0 0 0 1 0 0 0 1 3004.dat
+0 STEP
+0 !RC TITLE Back wall, row 3
+0 !RC TEXT Top the wall with two blue 1x4 bricks. Lean the phone against the wall, resting on the lip.
+1 1 -40 -120 10 1 0 0 0 1 0 0 0 1 3010.dat
+1 1 40 -120 10 1 0 0 0 1 0 0 0 1 3010.dat

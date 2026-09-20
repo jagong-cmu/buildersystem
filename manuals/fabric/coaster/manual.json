@@ -1,0 +1,13 @@
+{
+  "pieces": [
+    { "id": "square", "polygonMm": [[0,0],[120,0],[120,120],[0,120]], "fabricClass": "fab:cotton_woven", "qty": 2 }
+  ],
+  "notions": [ { "partType": "fab:thread", "qty": 1 } ],
+  "steps": [
+    { "kind": "cut", "pieces": ["square"], "text": "Cut two 120 × 120 mm squares (10 mm seam allowance included)." },
+    { "kind": "pin", "pieces": ["square"], "text": "Pin the squares right sides together." },
+    { "kind": "sew", "seam": { "a": ["square_1", "all"], "b": ["square_2", "all"] }, "text": "Sew around all four sides, leaving a 40 mm gap on one side." },
+    { "kind": "turn", "text": "Clip corners, turn right side out through the gap, press." },
+    { "kind": "sew", "seam": { "a": ["square_1", "edge"], "b": ["square_2", "edge"] }, "text": "Topstitch around the edge, closing the gap." }
+  ]
+}
