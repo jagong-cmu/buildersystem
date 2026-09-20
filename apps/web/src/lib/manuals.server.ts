@@ -9,13 +9,18 @@ export interface LibraryEntry {
   id: string;
   source: "builtin" | "dropbox";
   files: string[];
-  status: "ok" | "error";
+  status: "ok" | "error" | "pdf" | "draft" | "needs review";
   error?: string;
   manual?: Manual;
+  draft?: boolean;
   overridesBuiltin?: boolean;
 }
 
 function withRuntimeThumbnail(manual: Manual) {
+  if (manual.render === "document") {
+    manual.thumbnail = `/api/manuals/${manual.domain}/${manual.id}/page/1`;
+    return manual;
+  }
   const plugin = getPlugin(manual.domain);
   if (plugin.thumbnailSvg) manual.thumbnail = `/api/manuals/${manual.domain}/${manual.id}/thumb.svg`;
   return manual;
@@ -75,12 +80,16 @@ export async function listLibrary(): Promise<LibraryEntry[]> {
     const key = `${dir.domain}/${dir.id}`;
     const manual = runtimeById.get(key);
     const error = errorById.get(key);
+    const hasPdf = dir.files.includes("source.pdf");
+    const hasDraft = dir.files.includes("draft.json");
+    const status = manual?.needsReview ? "needs review" : manual ? "ok" : hasDraft ? "draft" : hasPdf ? "pdf" : "error";
     entries.set(key, {
       domain: dir.domain,
       id: dir.id,
       source: "dropbox",
       files: dir.files,
-      status: manual ? "ok" : "error",
+      status,
+      draft: hasDraft,
       ...(error ? { error } : {}),
       ...(manual ? { manual } : {}),
       ...(builtinById.has(key) ? { overridesBuiltin: true } : {}),

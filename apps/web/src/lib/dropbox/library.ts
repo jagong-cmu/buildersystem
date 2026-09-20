@@ -165,7 +165,12 @@ export async function sync(client: LibraryClient, opts: { root: string; cacheDir
     if (entry[".tag"] !== "file" || !mapped || (entry.size !== undefined && entry.size > MAX_FILE_SIZE)) continue;
     seen.add(remote);
     const prior = nextFiles[remote];
-    if (prior?.rev === entry.rev) continue;
+    if (prior?.rev === entry.rev) {
+      try {
+        await fs.access(path.join(cacheDir, prior.local));
+        continue;
+      } catch {}
+    }
     try {
       const downloaded = (await withRetry(() => client.filesDownload({ path: entry.path_display ?? remote }))).result;
       const bytes = downloaded.fileBinary ?? (downloaded.fileBlob ? new Uint8Array(await downloaded.fileBlob.arrayBuffer()) : undefined);

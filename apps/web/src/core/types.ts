@@ -90,10 +90,19 @@ export interface Manual<P = unknown> extends ManualMeta {
   id: string;
   domain: DomainId;
   thumbnail: string;
+  render?: "document";
+  extraParts?: PartType[];
+  needsReview?: boolean;
   source: { kind: "ldr" | "json"; path: string };
   requires: Requirement[]; // derived from parts, never hand-written
   parts: PartInstance<P>[]; // final state
   steps: Step<P>[];
+}
+
+export interface PagePlacement {
+  kind: "page";
+  page: number;
+  bbox: [number, number, number, number];
 }
 
 export interface SubstitutionRule<P = unknown> {

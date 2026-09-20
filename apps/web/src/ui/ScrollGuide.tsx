@@ -9,7 +9,7 @@ import { tallyParts } from "@/core/tally";
 import type { AppliedSub, BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
 import { hardwareVerifier } from "@/domains/breadboard/verifiers";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
-import { RENDERERS } from "@/domains/renderers";
+import { DOCUMENT_RENDERER, RENDERERS } from "@/domains/renderers";
 import { DOMAIN_LABEL, partLabel, reqLabel } from "@/lib/format";
 import { HUB_HTTP, sendControl, subscribeControl } from "@/lib/hub";
 import { useInventory } from "@/lib/inventory-store";
@@ -76,7 +76,7 @@ interface SavedBuild {
 export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: boolean }) {
   const [manual, setManual] = useState(initial);
   const plugin = PLUGINS[manual.domain];
-  const Renderer = RENDERERS[manual.domain];
+  const Renderer = manual.render === "document" ? DOCUMENT_RENDERER : RENDERERS[manual.domain];
   const [inventory] = useInventory(manual.domain);
   const match = useMemo(() => matchManual(inventory, manual, plugin.substitutions, MATCH_DEFAULTS[manual.domain], plugin), [inventory, manual, plugin]);
 

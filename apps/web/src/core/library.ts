@@ -5,6 +5,7 @@ import path from "node:path";
 import type { ManualInput } from "./plugin";
 import type { DomainId, Manual } from "./types";
 import { DOMAIN_IDS, getPlugin } from "@/domains";
+import { loadDocumentManual } from "./document";
 
 export function manualsRoot(): string {
   // apps/web -> repo root
@@ -57,7 +58,12 @@ export async function loadLibrary(root = manualsRoot()): Promise<{ manuals: Manu
     for (const id of ids.sort()) {
       try {
         const input = await readManualInput(domain, id, root);
-        manuals.push(getPlugin(domain).loadManual(input));
+        if (input.files["ingested.json"]) manuals.push(loadDocumentManual(input));
+        else {
+          const names = await fs.readdir(path.join(root, domain, id));
+          if (names.includes("source.pdf")) continue;
+          manuals.push(getPlugin(domain).loadManual(input));
+        }
       } catch (e) {
         errors.push(`${domain}/${id}: ${(e as Error).message}`);
       }

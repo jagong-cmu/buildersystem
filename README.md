@@ -85,7 +85,7 @@ For LEGO, `0 !RC TITLE …` and `0 !RC TEXT …` meta lines before a `0 STEP` se
 - [x] **M4c** hands-free polish: state estimation on join (renderer snapshots + `/api/estimate-step`, spoken 5 s proposal), “where is it”, `pnpm demo:replay`
 - [ ] **M5** demo assets (real manuals for the chosen LEGO set, reference photos for vision, marker mat), rehearsal, recorded fallback
 - Vision verifier (`/api/verify`) is implemented and returns `unsure` with a plain hint when the hub or provider is unavailable; **Mark done** always works.
-- Dropbox Phase A build-record export and Phase B manual sync with `/library` listings are complete; Phases C–D are planned.
+- Dropbox Phase A build-record export, Phase B manual sync, and Phase C PDF ingestion/document rendering with `/library` listings are complete; Phase D persistent photo inventory is planned. PDF ingestion uses `mupdf` and caps documents at 40 pages.
 
 ### Replan
 

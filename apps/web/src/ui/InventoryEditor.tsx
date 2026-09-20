@@ -1,6 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import type { DomainId, Inventory } from "@/core/types";
+import type { DomainId, Inventory, PartType } from "@/core/types";
 import { PLUGINS } from "@/domains";
 import { withQty } from "@/lib/inventory-store";
 import { LDRAW_COLORS } from "@/domains/lego/vocabulary";
@@ -11,14 +11,14 @@ const LEGO_COLORS = ["red", "blue", "yellow", "white", "black", "green", "light 
  * Editable inventory (PRD §5.2): the demo must never be blocked by a misdetection.
  * Rows are the domain vocabulary; LEGO rows are per color.
  */
-export function InventoryEditor({ domain, inventory, onChange }: { domain: DomainId; inventory: Inventory; onChange: (i: Inventory) => void }) {
+export function InventoryEditor({ domain, inventory, onChange, extraParts = [] }: { domain: DomainId; inventory: Inventory; onChange: (i: Inventory) => void; extraParts?: PartType[] }) {
   const plugin = PLUGINS[domain];
   const rows = useMemo(() => {
     if (domain === "lego") {
-      return plugin.vocabulary.flatMap((p) => LEGO_COLORS.map((c) => ({ partType: p.id, name: p.name, color: c })));
+      return [...plugin.vocabulary.flatMap((p) => LEGO_COLORS.map((c) => ({ partType: p.id, name: p.name, color: c }))), ...extraParts.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined }))];
     }
-    return plugin.vocabulary.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined }));
-  }, [domain, plugin]);
+    return [...plugin.vocabulary.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined })), ...extraParts.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined }))];
+  }, [domain, plugin, extraParts]);
 
   const qtyOf = (partType: string, color?: string) =>
     inventory.items.filter((it) => it.partType === partType && (it.color ?? "") === (color ?? "")).reduce((s, it) => s + it.qty, 0);

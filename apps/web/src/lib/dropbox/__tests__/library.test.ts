@@ -117,4 +117,38 @@ describe("Dropbox manual library sync", () => {
     expect(result.errors).toEqual(["/manuals/lego/demo/meta.json: download failed"]);
     await expect(fs.readFile(path.join(cacheDir, "manuals/lego/demo/model.ldr"), "utf8")).resolves.toBe("model");
   });
+
+  it("redownloads a file whose cached content is missing", async () => {
+    const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "library-"));
+    roots.push(cacheDir);
+    let downloads = 0;
+    const client: LibraryClient = {
+      async filesListFolderGetLatestCursor() {
+        return { result: { cursor: "cursor-1" } };
+      },
+      async filesListFolder() {
+        return { result: { entries: [file("/Manuals/lego/demo/model.ldr", "r1")], cursor: "cursor-1", has_more: false } };
+      },
+      async filesListFolderContinue() {
+        return {
+          result: {
+            entries: [file("/Manuals/lego/demo/model.ldr", "r1")],
+            cursor: "cursor-2",
+            has_more: false,
+          },
+        };
+      },
+      async filesDownload() {
+        downloads += 1;
+        return { result: { fileBinary: Buffer.from("model"), rev: "r1" } };
+      },
+    };
+
+    await sync(client, { root: "/Manuals", cacheDir });
+    await fs.rm(path.join(cacheDir, "manuals/lego/demo/model.ldr"));
+    await sync(client, { root: "/Manuals", cacheDir });
+
+    expect(downloads).toBe(2);
+    await expect(fs.readFile(path.join(cacheDir, "manuals/lego/demo/model.ldr"), "utf8")).resolves.toBe("model");
+  });
 });
