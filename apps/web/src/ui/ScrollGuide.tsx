@@ -60,6 +60,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const { glassesOnline, sourceId: primaryId } = usePrimarySource();
   const [liveOverride, setLiveOverride] = useState<boolean | null>(null);
   const live = liveOverride ?? glassesOnline;
+  const [feedExpanded, setFeedExpanded] = useState(false);
   const detections = useDetections();
   // Keep detections flowing on the guide (overlay + "In your view") without touching the inventory.
   useLiveInventory({ domain: manual.domain, enabled: live, writeInventory: false });
@@ -453,13 +454,31 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       </aside>
 
       {live && (
-        <div className="live-pip shadow-xl space-y-2">
-          <LiveFeed
-            compact
-            overlay={(frame) => (
-              <FrameOverlay domain={manual.domain} detections={detections.items} frame={frame ?? detections.frame} highlight={highlight} dimOthers labels="highlight" />
-            )}
-          />
+        <div className={`${feedExpanded ? "live-expanded" : "live-pip"} shadow-xl space-y-2`}>
+          <div className="relative">
+            <LiveFeed
+              compact
+              aspect={feedExpanded ? "16 / 10" : undefined}
+              overlay={(frame) => (
+                <FrameOverlay
+                  domain={manual.domain}
+                  detections={detections.items}
+                  frame={frame ?? detections.frame}
+                  highlight={highlight}
+                  dimOthers={!feedExpanded}
+                  labels={feedExpanded ? "all" : "highlight"}
+                />
+              )}
+            />
+            <button
+              className="btn sm absolute right-2 top-2"
+              style={{ backdropFilter: "blur(6px)" }}
+              onClick={() => setFeedExpanded((e) => !e)}
+              aria-label={feedExpanded ? "shrink live feed" : "expand live feed"}
+            >
+              {feedExpanded ? "↙ shrink" : "↗ expand"}
+            </button>
+          </div>
           {step && step.callouts.length > 0 && (
             <div className="panel px-3 py-2 text-xs space-y-1" data-testid="in-your-view">
               <div className="muted font-medium">In your view</div>

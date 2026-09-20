@@ -47,12 +47,19 @@ function mockItems(plugin: DomainPlugin, seed: number): InventoryItem[] {
     const part = vocab[(s >>> 3) % vocab.length];
     const cx = 0.12 + ((s >>> 7) % 76) / 100;
     const cy = 0.12 + ((s >>> 13) % 76) / 100;
+    const qty = 1 + ((s >>> 19) % 4);
+    const boxes = Array.from({ length: qty }, (_, k): [number, number, number, number] => {
+      const dx = ((k % 2) * 2 - 1) * 0.09 * Math.ceil(k / 2);
+      const dy = (k > 1 ? 1 : 0) * 0.14;
+      return [Math.min(0.84, Math.max(0, cx - 0.08 + dx)), Math.min(0.88, Math.max(0, cy - 0.06 + dy)), 0.16, 0.12];
+    });
     items.push({
       partType: part.id,
-      qty: 1 + ((s >>> 19) % 4),
+      qty,
       ...(plugin.id === "lego" ? { color: MOCK_COLORS[(s >>> 23) % MOCK_COLORS.length] } : {}),
       conf: 0.7 + ((s >>> 27) % 30) / 100,
-      bbox: [Math.max(0, cx - 0.08), Math.max(0, cy - 0.06), 0.16, 0.12],
+      bbox: boxes[0],
+      boxes,
     });
   }
   return items;
