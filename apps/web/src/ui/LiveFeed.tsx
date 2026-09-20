@@ -19,6 +19,7 @@ export function LiveFeed({
   onFrame,
   overlay,
   aspect,
+  still,
 }: {
   onSnapshot?: (blob: Blob, sourceId: string) => void;
   busy?: string | null;
@@ -28,6 +29,8 @@ export function LiveFeed({
   /** Rendered over the image (e.g. FrameOverlay); receives the latest frame size. */
   overlay?: (frame: { w: number; h: number } | null) => ReactNode;
   aspect?: string;
+  /** Fixed image shown while no live stream is available (the last live frame wins if there is one). */
+  still?: string;
 }) {
   const { sources, sourceId: primaryId, hubOnline } = usePrimarySource();
   const [override, setOverride] = useState<string>("");
@@ -37,6 +40,7 @@ export function LiveFeed({
   const [status, setStatus] = useState<"connecting" | "live" | "offline">("connecting");
   const [attempt, setAttempt] = useState(0);
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
+  const [hasFrame, setHasFrame] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlob = useRef<Blob | null>(null);
   const onSourceChangeRef = useRef(onSourceChange);
@@ -82,6 +86,7 @@ export function LiveFeed({
             decoding = false;
           });
       }
+      setHasFrame(true);
       const w = Number(header.w);
       const h = Number(header.h);
       if (w && h && `${w}x${h}` !== lastSize) {
@@ -107,13 +112,23 @@ export function LiveFeed({
   const current = sources.find((s) => s.id === sourceId);
   const showFeed = !!sourceId && status === "live" && current?.online !== false;
   const shownStatus = status === "live" && current?.online === false ? "offline" : status;
+  // No stream: freeze on the last frame, else fall back to the fixed image.
+  const showStill = !showFeed && !!still && !hasFrame;
+  const showFrozen = !showFeed && hasFrame;
 
   return (
     <div className="panel overflow-hidden">
       <div className="relative bg-black" style={{ aspectRatio: aspect ?? (compact ? "4 / 3" : "16 / 10") }}>
-        <canvas ref={canvasRef} role="img" aria-label="live feed" className="absolute inset-0 w-full h-full object-contain" style={{ opacity: showFeed ? 1 : 0.35 }} />
+        <canvas ref={canvasRef} role="img" aria-label="live feed" className="absolute inset-0 w-full h-full object-contain" style={{ opacity: showFeed ? 1 : showFrozen ? 0.8 : 0 }} />
+        {showStill && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={still} alt="reference image" className="absolute inset-0 w-full h-full object-contain" />
+        )}
         {showFeed && overlay?.(frame)}
-        {!showFeed && (
+        {(showStill || showFrozen) && (
+          <span className="absolute right-2 bottom-2 chip" style={{ backdropFilter: "blur(6px)" }}>{showFrozen ? "last frame" : "still image"}</span>
+        )}
+        {!showFeed && !showStill && !showFrozen && (
           <div className="absolute inset-0 grid place-items-center text-sm muted text-center px-6">
             {status === "offline" || !hubOnline || current?.online === false || !sourceId ? (
               <div>

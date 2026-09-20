@@ -83,10 +83,11 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const [active, setActive] = useState(0);
   const progressLoaded = useRef(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
-  // PiP is on by default whenever a glasses source is online; the button overrides.
-  const { glassesOnline, sourceId: primaryId } = usePrimarySource();
+  // PiP is always on: it streams whenever a source (glasses first) is online and
+  // otherwise holds a fixed image, so the builder never loses the camera view.
+  const { sourceId: primaryId } = usePrimarySource();
   const [liveOverride, setLiveOverride] = useState<boolean | null>(null);
-  const live = liveOverride ?? glassesOnline;
+  const live = liveOverride ?? true;
   const [feedExpanded, setFeedExpanded] = useState(false);
   const detections = useDetections();
   // Keep detections flowing on the guide (overlay + "In your view") without touching the inventory.
@@ -656,6 +657,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
             <LiveFeed
               compact
               aspect={feedExpanded ? "16 / 10" : undefined}
+              still={manual.thumbnail}
               overlay={(frame) => (
                 <FrameOverlay
                   domain={manual.domain}
