@@ -19,8 +19,13 @@ export class FrameWindow {
   seqs(): number[] {
     return this.frames.map((f) => f.seq);
   }
-  aggregate(): InventoryItem[] {
-    return aggregateFrames(this.frames.map((f) => f.items)).sort((a, b) => a.partType.localeCompare(b.partType));
+  /** A row has to be seen in at least `confirm` frames of the window (when the window has that many) before it counts. */
+  aggregate(confirm = 2): InventoryItem[] {
+    const minFrames = Math.min(confirm, this.frames.length);
+    return aggregateFrames(
+      this.frames.map((f) => f.items),
+      minFrames,
+    ).sort((a, b) => a.partType.localeCompare(b.partType));
   }
   clear() {
     this.frames = [];

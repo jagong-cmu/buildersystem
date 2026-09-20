@@ -78,6 +78,7 @@ export function FrameOverlay({
                   title={name}
                 >
                   {`${d.qty} × ${name}`}
+                  <span className="opacity-70">{` · ${d.conf.toFixed(2)}`}</span>
                 </span>}
               </div>
             );
