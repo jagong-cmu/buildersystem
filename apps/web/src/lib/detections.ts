@@ -4,6 +4,7 @@
 // was processed without it `STALE_FRAMES` times in a row.
 import { useSyncExternalStore } from "react";
 import type { InventoryItem } from "@/core/types";
+import { aggregateFrames } from "@/core/inventory";
 import { keyOf } from "@/lib/live-inventory";
 
 export interface Detection extends InventoryItem {
@@ -30,6 +31,7 @@ const emit = () => listeners.forEach((l) => l());
 
 export function recordDetections(items: InventoryItem[], seq: number, sourceId: string, frame?: { w: number; h: number }) {
   const now = Date.now();
+  items = aggregateFrames([items]);
   const seen = new Map(items.map((it) => [keyOf(it), it] as const));
   const next: Detection[] = [];
   for (const prev of state.items) {

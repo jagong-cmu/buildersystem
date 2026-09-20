@@ -78,5 +78,5 @@ export function aggregateFrames(frames: InventoryItem[][]): InventoryItem[] {
 }
 
 export function makeInventory(domain: DomainId, items: InventoryItem[], sourceId: string, frameSeqs: number[] = []): Inventory {
-  return { domain, items, capturedAt: new Date().toISOString(), sourceId, frameSeqs };
+  return { domain, items: aggregateFrames([items]), capturedAt: new Date().toISOString(), sourceId, frameSeqs };
 }

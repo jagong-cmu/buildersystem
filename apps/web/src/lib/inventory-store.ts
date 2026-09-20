@@ -10,11 +10,22 @@ export function emptyInventory(domain: DomainId): Inventory {
   return { domain, items: [], capturedAt: new Date().toISOString(), sourceId: "manual", frameSeqs: [] };
 }
 
+/** Parse a stored inventory; anything malformed (bad JSON, wrong shape) reads as empty. */
+function parseInventory(raw: string | null, domain: DomainId): Inventory {
+  if (!raw) return emptyInventory(domain);
+  try {
+    const parsed = JSON.parse(raw) as Partial<Inventory> | null;
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.items)) return emptyInventory(domain);
+    return { ...emptyInventory(domain), ...parsed, domain, items: parsed.items.filter((it) => it && typeof it.partType === "string" && typeof it.qty === "number") };
+  } catch {
+    return emptyInventory(domain);
+  }
+}
+
 export function readInventory(domain: DomainId): Inventory {
   if (typeof window === "undefined") return emptyInventory(domain);
   try {
-    const raw = window.localStorage.getItem(KEY(domain));
-    return raw ? (JSON.parse(raw) as Inventory) : emptyInventory(domain);
+    return parseInventory(window.localStorage.getItem(KEY(domain)), domain);
   } catch {
     return emptyInventory(domain);
   }
@@ -66,7 +77,7 @@ function inventorySnapshot(domain: DomainId): Inventory {
   }
   const cached = invCache.get(domain);
   if (cached && cached.raw === raw) return cached.value;
-  const value = raw ? (JSON.parse(raw) as Inventory) : emptyInventory(domain);
+  const value = parseInventory(raw, domain);
   invCache.set(domain, { raw, value });
   return value;
 }
