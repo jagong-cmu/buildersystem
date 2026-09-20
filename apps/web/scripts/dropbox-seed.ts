@@ -15,7 +15,9 @@ const selected = parseOnly(process.argv.slice(2));
 const dryRun = process.argv.includes("--dry-run");
 
 function parseOnly(args: string[]): Set<Section> {
-  const value = args.find((arg) => arg.startsWith("--only="))?.slice("--only=".length);
+  const inline = args.find((arg) => arg.startsWith("--only="))?.slice("--only=".length);
+  const separateIndex = args.indexOf("--only");
+  const value = inline ?? (separateIndex >= 0 ? args[separateIndex + 1] : undefined);
   if (!value) return new Set(["manuals", "pdfs", "photos"]);
   if (!["manuals", "pdfs", "photos"].includes(value)) throw new Error(`Unknown --only value: ${value}`);
   return new Set([value as Section]);
