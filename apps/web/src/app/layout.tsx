@@ -4,6 +4,8 @@ import Link from "next/link";
 import "./globals.css";
 import { DomainSwitch } from "@/ui/DomainSwitch";
 import { NarrationToggle } from "@/ui/NarrationToggle";
+import { GlassesChip } from "@/ui/GlassesChip";
+import { AutoVerifyToggle } from "@/ui/AutoVerifyToggle";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -27,7 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/live">Live</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <GlassesChip />
             <DomainSwitch />
+            <AutoVerifyToggle />
             <NarrationToggle />
           </div>
         </header>

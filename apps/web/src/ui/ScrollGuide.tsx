@@ -12,7 +12,16 @@ import { RENDERERS } from "@/domains/renderers";
 import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
 import { HUB_HTTP, sendControl, subscribeControl } from "@/lib/hub";
 import { useInventory } from "@/lib/inventory-store";
+import { AutoVerify } from "@/lib/auto-verify";
+import { detectionsFor, useDetections } from "@/lib/detections";
+import { keyOf, locationPhrase } from "@/lib/live-inventory";
+import { usePrimarySource } from "@/lib/sources";
+import { FrameOverlay } from "./FrameOverlay";
 import { LiveFeed } from "./LiveFeed";
+import { useAutoVerifyPref } from "./useHandsFree";
+import { useLiveInventory } from "./useLiveInventory";
+
+const ADVANCE_SECONDS = 3;
 
 const BADGE: Record<VerifyStatus, { cls: string; label: string }> = {
   pending: { cls: "", label: "" },
@@ -39,8 +48,19 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
 
   const [active, setActive] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
-  const [live, setLive] = useState(false);
+  // PiP is on by default whenever a glasses source is online; the button overrides.
+  const { glassesOnline, sourceId: primaryId } = usePrimarySource();
+  const [liveOverride, setLiveOverride] = useState<boolean | null>(null);
+  const live = liveOverride ?? glassesOnline;
+  const detections = useDetections();
+  // Keep detections flowing on the guide (overlay + "In your view") without touching the inventory.
+  useLiveInventory({ domain: manual.domain, enabled: live, writeInventory: false });
+  const [autoVerifyOn] = useAutoVerifyPref();
+  const autoVerify = useRef(new AutoVerify());
+  const [countdown, setCountdown] = useState<{ step: number; left: number } | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [verify, setVerify] = useState<Record<number, VerifyResult>>({});
+  const latestCheck = useRef<(step: number, auto?: boolean) => Promise<void>>(async () => {});
   const armedAt = useRef<Record<number, number>>({});
   const cards = useRef<(HTMLElement | null)[]>([]);
   const snapshot = useRef<(() => Promise<Blob | null>) | null>(null);
@@ -84,7 +104,6 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
     if (active > 0) {
       armedAt.current[active] ??= Date.now();
       const s = manual.steps[active - 1];
-      setVerify((v) => (v[active] ? v : { ...v, [active]: { manualId: manual.id, step: active, status: "armed" } }));
       sendControl({ type: "step.activated", manualId: manual.id, step: active, text: s.text });
       sendControl({ type: "say", text: `Step ${active}. ${s.text}` });
     }
@@ -131,7 +150,19 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
   }, [active, verify]);
 
   useEffect(() => {
+    autoVerify.current.enabled = autoVerifyOn;
+  }, [autoVerifyOn]);
+  useEffect(() => {
+    autoVerify.current.setStep(active > 0 ? active : null);
+  }, [active]);
+
+  useEffect(() => {
     return subscribeControl((msg) => {
+      if (msg.type === "motion" && msg.source === primaryId && (msg.state === "active" || msg.state === "settled")) {
+        const step = autoVerify.current.onMotion(msg.state);
+        if (step != null) void latestCheck.current(step, true);
+        return;
+      }
       if (msg.type !== "part.missing" || typeof msg.partType !== "string") return;
       const verified = Object.entries(verifyRef.current)
         .filter(([, result]) => result.status === "verified")
@@ -144,7 +175,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
       };
       latestReportMissing.current(completedThrough + 1, req);
     });
-  }, []);
+  }, [primaryId]);
 
   useEffect(() => () => {
     if (bannerTimer.current) clearTimeout(bannerTimer.current);
@@ -173,14 +204,54 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [active, manual.steps.length, scrollTo]);
 
-  async function check(step: number) {
+  /** Speak the outcome and, on verified, count down and advance (PRD §14.3 hands-free). */
+  const startCountdown = useCallback((step: number) => {
+    if (countdownTimer.current) clearInterval(countdownTimer.current);
+    setCountdown({ step, left: ADVANCE_SECONDS });
+    countdownTimer.current = setInterval(() => {
+      setCountdown((c) => {
+        if (!c) return null;
+        if (c.left <= 1) {
+          if (countdownTimer.current) clearInterval(countdownTimer.current);
+          countdownTimer.current = null;
+          scrollTo(c.step + 1);
+          return null;
+        }
+        return { ...c, left: c.left - 1 };
+      });
+    }, 1000);
+  }, [scrollTo]);
+  useEffect(() => () => {
+    if (countdownTimer.current) clearInterval(countdownTimer.current);
+  }, []);
+
+  const settle = useCallback((step: number, r: VerifyResult) => {
+    setVerify((v) => ({ ...v, [step]: r }));
+    if (r.status === "verified") {
+      if (step >= manual.steps.length) {
+        sendControl({ type: "say", text: `Step ${step} verified. Build complete.` });
+        return;
+      }
+      sendControl({ type: "say", text: `Step ${step} verified. Next step in ${ADVANCE_SECONDS} seconds.` });
+      startCountdown(step);
+    } else if (r.status === "mismatch") {
+      sendControl({ type: "say", text: r.hint ? `Not yet. ${r.hint}` : `Step ${step} doesn't match yet.` });
+    } else if (r.status === "unsure") {
+      sendControl({ type: "say", text: `Couldn't confirm step ${step}. Try holding still with the build in view.` });
+    }
+  }, [manual.steps.length, startCountdown]);
+
+  const check = useCallback(async (step: number, auto = false) => {
+    if (autoVerify.current.checking) return;
+    autoVerify.current.setChecking(true);
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "checking" } }));
     sendControl({ type: "check", step });
+    if (auto) sendControl({ type: "say", text: `Checking step ${step}.` });
     try {
       if (manual.steps[step - 1]?.expected.probes?.length) {
         const hardware = await hardwareVerifier.verify(manual.id, manual.steps[step - 1] as Step<BoardPlacement>, { hubHttp: HUB_HTTP });
         if (hardware.status !== "unsure") {
-          setVerify((v) => ({ ...v, [step]: hardware }));
+          settle(step, hardware);
           return;
         }
       }
@@ -192,15 +263,45 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
       if (snap) fd.append("expected", snap, "expected.png");
       const res = await fetch("/api/verify", { method: "POST", body: fd });
       const r = (await res.json()) as VerifyResult;
-      setVerify((v) => ({ ...v, [step]: r }));
+      settle(step, r);
     } catch (e) {
-      setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "unsure", hint: (e as Error).message } }));
+      settle(step, { manualId: manual.id, step, status: "unsure", hint: (e as Error).message });
+    } finally {
+      autoVerify.current.setChecking(false);
     }
-  }
+  }, [manual, settle]);
+  useEffect(() => {
+    latestCheck.current = check;
+  }, [check]);
+
   function markDone(step: number) {
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "verified", hint: "marked by builder" } }));
-    if (step < manual.steps.length) scrollTo(step + 1);
+    if (step < manual.steps.length) {
+      sendControl({ type: "say", text: `Step ${step} done.` });
+      scrollTo(step + 1);
+    } else {
+      sendControl({ type: "say", text: "Build complete." });
+    }
   }
+
+  const activeStep = active > 0 ? manual.steps[active - 1] : null;
+  const highlight = useMemo(() => {
+    const keys = new Set<string>();
+    activeStep?.callouts.forEach((c) => {
+      keys.add(keyOf(c));
+      keys.add(`${c.partType}|`);
+    });
+    return keys;
+  }, [activeStep]);
+  const inView = useMemo(
+    () =>
+      (activeStep?.callouts ?? []).map((c) => {
+        const seen = detectionsFor(detections.items, c.partType, c.color).filter((d) => d.bbox && !d.misses);
+        const where = seen.length ? locationPhrase(seen[0].bbox!) : null;
+        return { req: c, where, qty: seen.reduce((s, d) => s + d.qty, 0) };
+      }),
+    [activeStep, detections.items],
+  );
 
   return (
     <div className="grid lg:grid-cols-[1.25fr_1fr] gap-0 max-w-7xl mx-auto">
@@ -217,14 +318,28 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
             <span className="mono muted text-xs">STEP {active}/{manual.steps.length}</span>
             <span className="font-medium">{active > 0 ? manual.steps[active - 1].title : manual.title}</span>
           </div>
-          <button className="btn sm ml-auto pointer-events-auto" onClick={() => setLive((l) => !l)}>
+          {countdown && (
+            <span className="chip ok pointer-events-auto" title="auto-advancing">
+              verified · next in {countdown.left}s
+              <button
+                className="underline ml-1"
+                onClick={() => {
+                  if (countdownTimer.current) clearInterval(countdownTimer.current);
+                  setCountdown(null);
+                }}
+              >
+                stay
+              </button>
+            </span>
+          )}
+          <button className="btn sm ml-auto pointer-events-auto" onClick={() => setLiveOverride(!live)}>
             {live ? "hide live" : "live"}
           </button>
         </div>
-        {banner && (banner.until > Date.now() || banner.unresolved.length > 0) && (
+        {banner && (banner.until > 0 || banner.unresolved.length > 0) && (
           <div className="plan-banner panel px-4 py-2 text-sm shadow-xl">
-            {banner.until > Date.now() && <div className="font-medium">Plan updated from step {banner.fromStep}</div>}
-            {banner.until > Date.now() && banner.subs.map((sub, i) => <div key={i} className="muted text-xs">{sub.note}</div>)}
+            {banner.until > 0 && <div className="font-medium">Plan updated from step {banner.fromStep}</div>}
+            {banner.until > 0 && banner.subs.map((sub, i) => <div key={i} className="muted text-xs">{sub.note}</div>)}
             {banner.unresolved.length > 0 && (
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span className="chip warn">Still missing: {banner.unresolved.map((req) => reqLabel(manual.domain, req)).join(", ")}</span>
@@ -236,8 +351,27 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
           </div>
         )}
         {live && (
-          <div className="absolute right-3 bottom-3 w-64 shadow-xl">
-            <LiveFeed compact />
+          <div className="absolute right-3 top-14 w-[22rem] max-w-[45%] shadow-xl space-y-2">
+            <LiveFeed
+              compact
+              overlay={(frame) => (
+                <FrameOverlay domain={manual.domain} detections={detections.items} frame={frame ?? detections.frame} highlight={highlight} dimOthers />
+              )}
+            />
+            {activeStep && activeStep.callouts.length > 0 && (
+              <div className="panel px-3 py-2 text-xs space-y-1" data-testid="in-your-view">
+                <div className="muted font-medium">In your view</div>
+                {inView.map(({ req, where, qty }, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: where ? "var(--accent)" : "var(--line)" }} />
+                    <span className={where ? "" : "muted"}>
+                      {where ? `${qty} × ` : ""}
+                      {reqLabel(manual.domain, req)} — {where ?? "not in view"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <div className="absolute bottom-3 inset-x-0 flex flex-col items-center gap-1">
@@ -296,7 +430,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
         </header>
 
         {manual.steps.map((s) => {
-          const v = verify[s.n]?.status ?? "pending";
+          const v = verify[s.n]?.status ?? (s.n <= active ? "armed" : "pending");
           const isActive = active === s.n;
           return (
             <section
