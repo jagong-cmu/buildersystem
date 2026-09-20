@@ -7,6 +7,8 @@ import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
 import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { MANUALS } from "@/lib/manuals";
+import { useLiveInventory } from "./useLiveInventory";
+import { useBuildsLivePref } from "./useHandsFree";
 
 const BUCKET: Record<MatchStatus, { title: string; blurb: string }> = {
   buildable: { title: "Buildable now", blurb: "Every required part is on the table." },
@@ -19,6 +21,8 @@ export function BuildsView() {
   const [inventory] = useInventory(domain);
   const [colorAware, setColorAware] = useState<boolean>(MATCH_DEFAULTS[domain].colorAware);
   const plugin = PLUGINS[domain];
+  const [liveOn, setLiveOn] = useBuildsLivePref();
+  const live = useLiveInventory({ domain, enabled: liveOn });
 
   const matches = useMemo(
     () => rankManuals(inventory, MANUALS, plugin.substitutions, { colorAware }, plugin),
@@ -36,8 +40,13 @@ export function BuildsView() {
             edit inventory
           </Link>
         </span>
+        <label className="ml-auto text-sm flex items-center gap-2" title="Keep updating the inventory from the glasses while on this page">
+          <input type="checkbox" checked={liveOn} onChange={(e) => setLiveOn(e.target.checked)} />
+          keep looking
+          {live.status.running && <span className="chip ok">live · {live.status.processed}</span>}
+        </label>
         {domain === "lego" && (
-          <label className="ml-auto text-sm flex items-center gap-2">
+          <label className="text-sm flex items-center gap-2">
             <input type="checkbox" checked={colorAware} onChange={(e) => setColorAware(e.target.checked)} />
             match colors exactly
           </label>

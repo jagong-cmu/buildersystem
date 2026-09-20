@@ -9,6 +9,7 @@ export interface SourceStatus {
   fps: number;
   frames: number;
   latestSeq: number | null;
+  latestTs?: number | null;
 }
 
 export async function fetchSources(): Promise<SourceStatus[]> {

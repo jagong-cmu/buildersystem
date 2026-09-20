@@ -11,6 +11,19 @@ const defaultVisionModel = () =>
 
 export const VISION_MODEL = process.env.VISION_MODEL ?? defaultVisionModel();
 
+/** VISION_MOCK=1: routes return deterministic fake detections (no provider, no cost) for demos and CI. */
+export const VISION_MOCK = process.env.VISION_MOCK === "1";
+
+/** Cheap stable hash of image bytes so mock results vary per frame but repeat per frame. */
+export function imageHash(images: { data: Uint8Array }[]): number {
+  let h = 2166136261;
+  for (const im of images) {
+    const step = Math.max(1, Math.floor(im.data.length / 512));
+    for (let i = 0; i < im.data.length; i += step) h = Math.imul(h ^ im.data[i], 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
 export function visionModel() {
   const modelId = process.env.VISION_MODEL ?? defaultVisionModel();
   if (process.env.AI_GATEWAY_API_KEY) return modelId;

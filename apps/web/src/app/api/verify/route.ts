@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getManual } from "@/lib/manuals";
-import { visionObject } from "@/lib/vision";
+import { VISION_MOCK, imageHash, visionObject } from "@/lib/vision";
 import type { VerifyResult } from "@/core/types";
 
 export const runtime = "nodejs";
@@ -23,6 +23,14 @@ async function hubFrame(path: string): Promise<{ data: Uint8Array; mediaType: st
   } catch {
     return null;
   }
+}
+
+/** VISION_MOCK: verified two times out of three, mismatch otherwise, keyed on the frame bytes. */
+function mockVerify(seed: number, step: number): z.infer<typeof resultSchema> {
+  const roll = (seed + step) % 3;
+  return roll === 2
+    ? { status: "mismatch", conf: 0.8, hint: "The last part looks like it is one stud too far left." }
+    : { status: "verified", conf: 0.9, hint: "Looks right." };
 }
 
 export async function POST(req: Request) {
@@ -63,13 +71,15 @@ export async function POST(req: Request) {
   labels.push(`Image ${images.length}: the camera NOW.`);
 
   try {
-    const out = await visionObject({
-      schema: resultSchema,
-      system:
-        "You verify one assembly step from camera images. Be conservative: say 'verified' only when the described change is clearly visible, 'mismatch' when something is clearly wrong or missing, otherwise 'unsure'. Never block the builder over lighting or angle.",
-      text: [`Domain: ${manual.domain}. Build: ${manual.title}. Step ${step}: ${s.text}`, `Expected: ${s.expected.description}`, ...labels].join("\n"),
-      images,
-    });
+    const out = VISION_MOCK
+      ? mockVerify(imageHash([after]), step)
+      : await visionObject({
+          schema: resultSchema,
+          system:
+            "You verify one assembly step from camera images. Be conservative: say 'verified' only when the described change is clearly visible, 'mismatch' when something is clearly wrong or missing, otherwise 'unsure'. Never block the builder over lighting or angle.",
+          text: [`Domain: ${manual.domain}. Build: ${manual.title}. Step ${step}: ${s.text}`, `Expected: ${s.expected.description}`, ...labels].join("\n"),
+          images,
+        });
     const result: VerifyResult = { manualId, step, status: out.status, conf: out.conf, hint: out.hint, evidence: { sourceId, before: !!before } };
     fetch(`${HUB}/control`, { method: "POST", body: JSON.stringify({ type: "verify.result", manualId, step, status: out.status, hint: out.hint }) }).catch(() => {});
     return NextResponse.json(result);
