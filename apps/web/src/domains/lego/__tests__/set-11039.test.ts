@@ -5,7 +5,7 @@ import type { Inventory } from "@/core/types";
 import { getPlugin } from "@/domains";
 import { LEGO_PARTS } from "../vocabulary";
 import { DIMS } from "../dims";
-import { SET_11039, setInventoryItems } from "../sets";
+import { SET_11039, setCoverage, setInventoryItems } from "../sets";
 
 const setInventory: Inventory = { domain: "lego", capturedAt: new Date(0).toISOString(), sourceId: "set-11039", frameSeqs: [], items: setInventoryItems(SET_11039) };
 
@@ -46,5 +46,23 @@ describe("LEGO 11039 Creative Food Friends", () => {
     expect(manuals.find((m) => m.id === "creative-food-ice-cream")!.steps).toHaveLength(10);
     expect(manuals.find((m) => m.id === "creative-food-avocado")!.steps).toHaveLength(15);
     expect(manuals.find((m) => m.id === "creative-food-taco")!.steps).toHaveLength(12);
+  });
+
+  it("counts how much of the set a partial scan found", () => {
+    expect(setCoverage(SET_11039, setInventory.items, true)).toBe(150);
+    expect(setCoverage(SET_11039, [{ partType: "lego:98138", qty: 10, conf: 1, color: "black" }], true)).toBe(4);
+    expect(setCoverage(SET_11039, [{ partType: "lego:98138", qty: 10, conf: 1, color: "black" }], false)).toBe(10);
+  });
+
+  it("accepts look-alike printed tiles the scanner cannot tell apart", async () => {
+    const plugin = getPlugin("lego");
+    const { manuals } = await loadLibrary();
+    const avocado = manuals.find((m) => m.id === "creative-food-avocado")!;
+    // Swap every printed eye tile for a plain white round tile: still buildable via substitutions.
+    const eyes = new Set(["lego:102576", "lego:102577", "lego:102702", "lego:102763", "lego:102764", "lego:103032"]);
+    const items = setInventory.items.map((it) => (eyes.has(it.partType) ? { ...it, partType: "lego:98138" } : it));
+    const m = matchManual({ ...setInventory, items }, avocado, plugin.substitutions, { colorAware: false });
+    expect(m.status).toBe("with-subs");
+    expect(m.missing).toEqual([]);
   });
 });

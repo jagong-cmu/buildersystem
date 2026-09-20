@@ -19,7 +19,35 @@ function splitAlongX(halfPart: string, offsetLdu: number) {
   };
 }
 
+/**
+ * Parts that differ only by their print (and the plain part underneath). The scanner
+ * cannot tell eye design 224 from 225 on a 1x1 tile, so any member of a family may
+ * stand in for any other. Same footprint: no placement rewrite needed.
+ */
+function lookAlikes(family: string[], plain: string, what: string): SubstitutionRule<LegoPlacement>[] {
+  const rules: SubstitutionRule<LegoPlacement>[] = [];
+  for (const produces of family) {
+    for (const consumes of [...family, plain]) {
+      if (consumes === produces) continue;
+      rules.push({
+        id: `lego:${consumes}-for-${produces}`,
+        domain: "lego",
+        consumes: [{ partType: `lego:${consumes}`, qty: 1 }],
+        produces: { partType: `lego:${produces}`, qty: 1 },
+        penalty: consumes === plain ? 2 : 1,
+        note: `Same ${what}; only the print differs.`,
+      });
+    }
+  }
+  return rules;
+}
+
+const EYE_TILES = ["102576", "102577", "102702", "102763", "102764", "103032", "72399"];
+const SMILE_BRICKS = ["110723", "102701", "110721"];
+
 export const LEGO_SUBS: SubstitutionRule<LegoPlacement>[] = [
+  ...lookAlikes(EYE_TILES, "98138", "1x1 round tile"),
+  ...lookAlikes(SMILE_BRICKS, "3004", "1x2 brick"),
   {
     id: "lego:2x2x2-for-2x4",
     domain: "lego",

@@ -67,10 +67,10 @@
 0 STEP
 0 !RC TITLE Dome
 0 !RC TEXT Centre the lime 2x2 dome brick on top.
-1 27 0 -152 0 1 0 0 0 1 0 0 0 1 3262.dat
+1 27 0 -136 0 1 0 0 0 1 0 0 0 1 3262.dat
 0 STEP
 0 !RC TITLE Stem and leaf
 0 !RC TEXT Push the reddish brown cone into the dome and top it with a bright green leaf plate.
-1 70 0 -176 0 1 0 0 0 1 0 0 0 1 59900.dat
-1 10 0 -184 0 0.7071 0 -0.7071 0 1 0 0.7071 0 0.7071 32607.dat
+1 70 0 -160 0 1 0 0 0 1 0 0 0 1 59900.dat
+1 10 0 -168 0 0.7071 0 -0.7071 0 1 0 0.7071 0 0.7071 32607.dat
 0 STEP

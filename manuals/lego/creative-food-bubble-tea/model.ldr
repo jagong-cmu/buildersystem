@@ -65,9 +65,9 @@
 0 STEP
 0 !RC TITLE Lid
 0 !RC TEXT Centre the white 2x2 round plate on top.
-1 15 0 -152 0 1 0 0 0 1 0 0 0 1 18674.dat
+1 15 0 -136 0 1 0 0 0 1 0 0 0 1 18674.dat
 0 STEP
 0 !RC TITLE Straw
 0 !RC TEXT Push the white tube onto the lid stud.
-1 15 0 -176 0 1 0 0 0 1 0 0 0 1 25214.dat
+1 15 0 -160 0 1 0 0 0 1 0 0 0 1 25214.dat
 0 STEP
