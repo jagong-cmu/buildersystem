@@ -34,7 +34,7 @@ export function LiveFeed({
   const sourceId = override && sources.some((s) => s.id === override) ? override : primaryId;
   const [status, setStatus] = useState<"connecting" | "live" | "offline">("connecting");
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlob = useRef<Blob | null>(null);
   const onSourceChangeRef = useRef(onSourceChange);
   const onFrameRef = useRef(onFrame);
@@ -51,16 +51,33 @@ export function LiveFeed({
     if (!sourceId) return;
     const ws = new WebSocket(`${HUB_WS}/consume?source=${encodeURIComponent(sourceId)}`);
     ws.binaryType = "arraybuffer";
-    let url: string | null = null;
     let lastSize = "";
+    let decoding = false;
+    let alive = true;
     ws.onopen = () => setStatus("connecting");
     ws.onmessage = (ev) => {
       const { header, jpeg } = decodeFrameMessage(ev.data as ArrayBuffer);
       lastBlob.current = jpeg;
-      const next = URL.createObjectURL(jpeg);
-      if (imgRef.current) imgRef.current.src = next;
-      if (url) URL.revokeObjectURL(url);
-      url = next;
+      // Decode straight onto a canvas (no per-frame object URLs); latest wins while a decode is in flight.
+      if (!decoding) {
+        decoding = true;
+        createImageBitmap(jpeg)
+          .then((bmp) => {
+            const canvas = canvasRef.current;
+            if (alive && canvas) {
+              if (canvas.width !== bmp.width || canvas.height !== bmp.height) {
+                canvas.width = bmp.width;
+                canvas.height = bmp.height;
+              }
+              canvas.getContext("2d")?.drawImage(bmp, 0, 0);
+            }
+            bmp.close();
+          })
+          .catch(() => {})
+          .finally(() => {
+            decoding = false;
+          });
+      }
       const w = Number(header.w);
       const h = Number(header.h);
       if (w && h && `${w}x${h}` !== lastSize) {
@@ -73,8 +90,8 @@ export function LiveFeed({
     ws.onclose = () => setStatus("offline");
     ws.onerror = () => setStatus("offline");
     return () => {
+      alive = false;
       ws.close();
-      if (url) URL.revokeObjectURL(url);
     };
   }, [sourceId]);
 
@@ -84,8 +101,7 @@ export function LiveFeed({
   return (
     <div className="panel overflow-hidden">
       <div className="relative bg-black" style={{ aspectRatio: aspect ?? (compact ? "4 / 3" : "16 / 10") }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={imgRef} alt="live feed" className="absolute inset-0 w-full h-full object-contain" style={{ opacity: showFeed ? 1 : 0.35 }} />
+        <canvas ref={canvasRef} role="img" aria-label="live feed" className="absolute inset-0 w-full h-full object-contain" style={{ opacity: showFeed ? 1 : 0.35 }} />
         {showFeed && overlay?.(frame)}
         {!showFeed && (
           <div className="absolute inset-0 grid place-items-center text-sm muted text-center px-6">
