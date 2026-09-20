@@ -18,6 +18,14 @@ pnpm manuals:index  # parse manuals/ → apps/web/src/generated/manuals.index.js
 - Phone as camera: open `http://<laptop-lan-ip>:3000/source/phone` on a phone on the same Wi-Fi, set the hub to `ws://<laptop-lan-ip>:8787`, Start. (Camera needs a secure context: use `next dev --experimental-https` or a localhost tunnel.)
 - Hub health: `curl localhost:8787/health`
 
+For direct vision providers, set `AI_GATEWAY_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`,
+or `ANTHROPIC_API_KEY` in `apps/web/.env.local`. Dropbox Phase A uses an App Folder:
+set `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, and `DROPBOX_COOKIE_SECRET`, then run
+`cd apps/web && pnpm dropbox:auth` once to obtain `DROPBOX_REFRESH_TOKEN`. The
+app reports Dropbox as not connected when no refresh token is configured.
+`/library` connection shell and build-record export are implemented; manual sync,
+PDF ingestion, and persistent photo inventory are planned for Phases B–D.
+
 ## Add a manual
 
 Drop a folder under `manuals/<domain>/<id>/` with `meta.json` and the source file (`model.ldr` for LEGO — export from BrickLink Studio with steps; `manual.json` for breadboard/fabric, see PRD §10 for the schemas). Requirements and callouts are derived from the file. `pnpm manuals:index` fails loudly on a bad manual.
