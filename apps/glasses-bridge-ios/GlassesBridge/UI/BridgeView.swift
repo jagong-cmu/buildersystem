@@ -18,6 +18,7 @@ struct BridgeView: View {
                 hubSection
                 glassesSection
                 streamSection
+                PhotoSendSection()
                 controlsSection
                 narrationSection
                 if MockGlassesController.available { developerSection }
@@ -79,6 +80,9 @@ struct BridgeView: View {
                     Button("Update firmware in Meta AI") { Task { await stream.openFirmwareUpdate() } }
                 }
             }
+            // Always reachable: the SDK only reports datAppOnTheGlassesUpdateRequired
+            // when the BLE handshake completes, which a stale link may not allow.
+            Button("Update the glasses app in Meta AI") { Task { await stream.openGlassesAppUpdate() } }
         }
     }
 
@@ -105,9 +109,21 @@ struct BridgeView: View {
                                                maxFps: settings.maxFps, maxWidth: settings.maxWidth, quality: settings.jpegQuality)
                         }
                     }.disabled(settings.endpoints == nil)
+                    Button("Phone camera") {
+                        guard let endpoints = settings.endpoints else { return }
+                        Task {
+                            await stream.startPhoneCamera(endpoints: endpoints, sourceId: settings.sourceId,
+                                                          maxFps: settings.maxFps, maxWidth: settings.maxWidth, quality: settings.jpegQuality)
+                        }
+                    }.disabled(settings.endpoints == nil)
                 }
                 Spacer()
                 statusChip(phaseLabel, ok: stream.phase == .streaming && stream.socket.state == .open)
+            }
+            if case .error(let reason) = stream.phase {
+                Text(reason).font(.footnote).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
             }
             LabeledContent("Socket", value: socketLabel)
             LabeledContent("Glasses → phone", value: String(format: "%.1f fps (%@)", stream.sourceFps, stream.streamState))
@@ -136,7 +152,7 @@ struct BridgeView: View {
         case .starting: return "starting"
         case .streaming: return "streaming"
         case .stopping: return "stopping"
-        case .error(let e): return "error: \(e.prefix(40))"
+        case .error: return "error"
         }
     }
 
