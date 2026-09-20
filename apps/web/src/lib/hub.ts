@@ -38,3 +38,21 @@ export function encodeFrameMessage(header: Record<string, unknown>, jpeg: ArrayB
 export function sendControl(msg: Record<string, unknown>) {
   return fetch(`${HUB_HTTP}/control`, { method: "POST", body: JSON.stringify(msg) }).catch(() => {});
 }
+
+export function subscribeControl(onMessage: (msg: Record<string, unknown>) => void): () => void {
+  let socket: WebSocket;
+  try {
+    socket = new WebSocket(`${HUB_WS}/control`);
+  } catch {
+    return () => {};
+  }
+  socket.addEventListener("message", (event) => {
+    if (typeof event.data !== "string") return;
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg && typeof msg === "object") onMessage(msg as Record<string, unknown>);
+    } catch {}
+  });
+  socket.addEventListener("error", () => {});
+  return () => socket.close();
+}

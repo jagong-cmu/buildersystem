@@ -56,7 +56,13 @@ export function aggregateFrames(frames: InventoryItem[][]): InventoryItem[] {
       else {
         cur.n++;
         cur.confSum += it.conf;
-        if (it.qty > cur.qty) Object.assign(cur, { qty: it.qty, bbox: it.bbox, polygonMm: it.polygonMm, attrs: it.attrs });
+        if (it.qty > cur.qty) cur.qty = it.qty;
+        if (it.bbox === undefined) delete cur.bbox;
+        else cur.bbox = it.bbox;
+        if (it.polygonMm === undefined) delete cur.polygonMm;
+        else cur.polygonMm = it.polygonMm;
+        if (it.attrs === undefined) delete cur.attrs;
+        else cur.attrs = it.attrs;
       }
     }
   return [...best.values()].map(({ n, confSum, ...it }) => ({ ...it, conf: confSum / n }));

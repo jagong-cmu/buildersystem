@@ -18,6 +18,7 @@ export type ControlMessage =
   | { type: "next" }
   | { type: "prev" }
   | { type: "say"; text: string }
+  | { type: "part.missing"; partType: string; color?: string; qty?: number }
   | { type: "inventory.updated"; domain: string; count: number }
   | { type: "step.activated"; manualId: string; step: number; text: string }
   | { type: "verify.result"; manualId: string; step: number; status: string; hint?: string }

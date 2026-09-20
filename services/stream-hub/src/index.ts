@@ -104,7 +104,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/frames/latest") {
       const f = sources.get(sid)?.ring.latest();
       if (!f) return json(res, 404, { error: "no frames" });
-      res.writeHead(200, { "content-type": "image/jpeg", "access-control-allow-origin": "*", "x-seq": String(f.header.seq), "x-ts": String(f.header.ts), "cache-control": "no-store" });
+      res.writeHead(200, { "content-type": "image/jpeg", "access-control-allow-origin": "*", "access-control-expose-headers": "x-seq, x-ts", "x-seq": String(f.header.seq), "x-ts": String(f.header.ts), "cache-control": "no-store" });
       return res.end(Buffer.from(f.jpeg));
     }
 
@@ -112,7 +112,7 @@ const server = http.createServer(async (req, res) => {
       const ts = Number(url.searchParams.get("ts"));
       const f = sources.get(sid)?.ring.at(ts);
       if (!f) return json(res, 404, { error: "no frame at ts" });
-      res.writeHead(200, { "content-type": "image/jpeg", "access-control-allow-origin": "*", "x-seq": String(f.header.seq), "x-ts": String(f.header.ts) });
+      res.writeHead(200, { "content-type": "image/jpeg", "access-control-allow-origin": "*", "access-control-expose-headers": "x-seq, x-ts", "x-seq": String(f.header.seq), "x-ts": String(f.header.ts) });
       return res.end(Buffer.from(f.jpeg));
     }
 
