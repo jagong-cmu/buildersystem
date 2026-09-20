@@ -9,7 +9,8 @@ const clientSecret = process.env.DROPBOX_APP_SECRET;
 
 async function main() {
   if (!clientId || !clientSecret) throw new Error("Set DROPBOX_APP_KEY and DROPBOX_APP_SECRET in .env.local first.");
-  const auth = new DropboxAuth({ clientId, clientSecret });
+  // No clientSecret here: the SDK omits code_verifier when a secret is set, breaking PKCE.
+  const auth = new DropboxAuth({ clientId });
   const url = (await auth.getAuthenticationUrl(redirectUri, undefined, "code", "offline", undefined, "none", true))
     .replace("https://dropbox.com/", "https://www.dropbox.com/");
 

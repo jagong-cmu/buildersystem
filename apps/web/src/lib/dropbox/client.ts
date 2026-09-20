@@ -50,7 +50,8 @@ export async function getRefreshToken() {
 export function createAuth() {
   const clientId = process.env.DROPBOX_APP_KEY;
   if (!clientId) return null;
-  return new DropboxAuth({ clientId, clientSecret: process.env.DROPBOX_APP_SECRET });
+  // No clientSecret: the SDK skips code_verifier when one is set, breaking PKCE exchange.
+  return new DropboxAuth({ clientId });
 }
 
 export async function getDropbox() {
