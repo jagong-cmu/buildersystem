@@ -45,16 +45,19 @@ export function FrameOverlay({
     <div ref={ref} className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
       {image &&
         detections
-          .filter((d) => d.bbox)
-          .map((d) => {
-            const r = bboxToRect(d.bbox!, image);
+          .filter((d) => d.bbox || d.boxes?.length)
+          .flatMap((d) => {
+            const boxes = d.boxes?.length ? d.boxes : [d.bbox!];
             const hot = highlight?.has(keyOf(d)) || (highlight && d.color && highlight.has(`${d.partType}|`));
             const faded = dimOthers && highlight && !hot;
             const showLabel = labels !== "highlight" || hot;
             const color = hot ? "var(--accent)" : "var(--info)";
+            const name = `${d.color ? `${d.color} ` : ""}${partLabel(domain, d.partType)}`;
+            return boxes.map((bbox, i) => {
+            const r = bboxToRect(bbox, image);
             return (
               <div
-                key={keyOf(d)}
+                key={`${keyOf(d)}#${i}`}
                 className="absolute rounded-sm"
                 style={{
                   left: r.x,
@@ -71,11 +74,11 @@ export function FrameOverlay({
                   className="absolute left-0 -top-5 whitespace-nowrap px-1.5 py-0.5 rounded text-[11px] font-medium"
                   style={{ background: color, color: "#111", maxWidth: "min(16rem, 60vw)", overflow: "hidden", textOverflow: "ellipsis" }}
                 >
-                  {d.qty} × {d.color ? `${d.color} ` : ""}
-                  {partLabel(domain, d.partType)}
+                  {boxes.length > 1 ? `${name} · ${i + 1}/${boxes.length}` : `${d.qty} × ${name}`}
                 </span>}
               </div>
             );
+            });
           })}
     </div>
   );

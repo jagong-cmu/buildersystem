@@ -25,7 +25,8 @@ export interface InventoryItem {
   qty: number;
   color?: string;
   conf: number;
-  bbox?: [number, number, number, number]; // normalized x,y,w,h
+  bbox?: [number, number, number, number]; // normalized x,y,w,h of one representative instance
+  boxes?: [number, number, number, number][]; // one normalized box per visible instance
   polygonMm?: [number, number][]; // fabric scraps only
   attrs?: Record<string, number | string>; // e.g. zipper lengthMm
 }
