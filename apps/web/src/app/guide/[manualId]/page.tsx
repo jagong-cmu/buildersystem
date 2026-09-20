@@ -10,5 +10,5 @@ export default async function GuidePage({ params }: { params: Promise<{ manualId
   const { manualId } = await params;
   const manual = getManual(manualId);
   if (!manual) notFound();
-  return <ScrollGuide manual={manual} />;
+  return <ScrollGuide initial={manual} />;
 }
