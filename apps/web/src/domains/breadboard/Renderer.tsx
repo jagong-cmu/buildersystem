@@ -2,28 +2,8 @@
 // Breadboard renderer (PRD §13.2): hand-drawn SVG. Rows a–e / f–j × 30 columns, two power rails, a pin strip for the board.
 import { useEffect, useMemo, useRef } from "react";
 import type { RendererProps } from "@/core/plugin";
-import type { BoardPin, BoardPlacement, Hole, PartInstance } from "@/core/types";
-
-const W = 920, H = 520;
-const COL0 = 90, PITCH = 22, COLS = 30;
-const ROW_Y: Record<string, number> = { vcc: 40, gnd: 62, a: 120, b: 142, c: 164, d: 186, e: 208, f: 262, g: 284, h: 306, i: 328, j: 350 };
-const BOARD_Y = 470;
-const BOARD_PINS = ["5V", "3.3V", "GND", "VIN", "A0", "A1", "A2", "A3", "A4", "A5", "D13", "D12", "D11", "D10", "D9", "D8", "D7", "D6", "D5", "D4", "D3", "D2"];
-const BOARD_X0 = 90, BOARD_PITCH = 34;
-
-const WIRE_COLORS: Record<string, string> = { red: "#e5383b", black: "#222", yellow: "#f5c518", green: "#2ec27e", blue: "#3b82f6", white: "#eee", orange: "#ff8c42" };
-
-function holeXY(h: Hole): [number, number] {
-  return [COL0 + (h.col - 1) * PITCH, ROW_Y[h.row] ?? 200];
-}
-function boardXY(b: BoardPin): [number, number] {
-  const name = /^\d+$/.test(b.board) ? `D${b.board}` : b.board;
-  const i = Math.max(0, BOARD_PINS.indexOf(name));
-  return [BOARD_X0 + i * BOARD_PITCH, BOARD_Y];
-}
-function endXY(e: Hole | BoardPin): [number, number] {
-  return "board" in e ? boardXY(e) : holeXY(e);
-}
+import type { BoardPlacement, PartInstance } from "@/core/types";
+import { BOARD_PINS, BOARD_PITCH, BOARD_X0, BOARD_Y, COL0, COLS, H, PITCH, ROW_Y, W, WIRE_COLORS, endXY, holeXY, wirePath } from "./layout";
 
 type Phase = "hidden" | "ghost" | "current";
 
@@ -42,8 +22,7 @@ function Part({ inst, phase }: { inst: PartInstance<BoardPlacement>; phase: Phas
   if (pl.kind === "wire") {
     const [x1, y1] = endXY(pl.from);
     const [x2, y2] = endXY(pl.to);
-    const midY = Math.min(y1, y2) - 26;
-    const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+    const d = wirePath(pl.from, pl.to);
     return (
       <g opacity={op} filter={glow}>
         <path d={d} fill="none" stroke={WIRE_COLORS[inst.color ?? ""] ?? "#9ad"} strokeWidth={4} strokeLinecap="round" pathLength={1} className={phase === "current" ? "wire-draw" : undefined} />

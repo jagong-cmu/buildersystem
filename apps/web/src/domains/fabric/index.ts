@@ -1,5 +1,6 @@
 import type { DomainPlugin, Feasibility } from "@/core/plugin";
 import type { FabricPlacement, Inventory, Manual, Requirement, SubstitutionRule } from "@/core/types";
+import { thumbnailSvg } from "./thumbnail";
 import { loadFabricManual } from "./loader";
 import { bbox, nest } from "./nesting";
 import { FABRIC_COMPAT, FABRIC_PARTS, fabPartName } from "./vocabulary";
@@ -54,6 +55,7 @@ export function fabricFeasibility(inv: Inventory, m: Manual<FabricPlacement>): F
 }
 
 export const fabricPlugin: DomainPlugin<FabricPlacement> = {
+  thumbnailSvg,
   id: "fabric",
   vocabulary: FABRIC_PARTS,
   loadManual: loadFabricManual,

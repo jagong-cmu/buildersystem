@@ -157,8 +157,16 @@ export function ScrollGuide({ manual }: { manual: Manual }) {
           <div className="flex items-center gap-2 text-sm muted">
             <Link href="/builds" className="underline">builds</Link> · {DOMAIN_LABEL[manual.domain]}
           </div>
-          <h1 className="text-2xl font-semibold">{manual.title}</h1>
-          <p className="muted">{manual.description}</p>
+          <div className="flex items-start gap-3">
+            {manual.thumbnail && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={manual.thumbnail} alt="" className="w-24 h-24 shrink-0 object-contain rounded-md" style={{ background: "#0f1318", border: "1px solid var(--line)" }} />
+            )}
+            <div>
+              <h1 className="text-2xl font-semibold">{manual.title}</h1>
+              <p className="muted">{manual.description}</p>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             <span className="chip">{manual.steps.length} steps</span>
             <span className="chip">~{manual.estMinutes} min</span>
