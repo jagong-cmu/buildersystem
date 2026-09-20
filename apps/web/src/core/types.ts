@@ -135,13 +135,25 @@ export type VerifyStatus =
   | "mismatch"
   | "unsure";
 
+export interface VerifyEvidence {
+  [key: string]: unknown;
+  evidenceId?: string;
+  sourceId?: string;
+  sourceKind?: string;
+  before?: boolean;
+  after?: boolean;
+  expected?: boolean;
+  armedAt?: number;
+  verifiedAt?: number;
+}
+
 export interface VerifyResult {
   manualId: string;
   step: number;
   status: VerifyStatus;
   conf?: number;
   hint?: string;
-  evidence?: Record<string, unknown>;
+  evidence?: VerifyEvidence;
 }
 
 // ---- Placement types (domain payloads carried in PartInstance.placement) ----

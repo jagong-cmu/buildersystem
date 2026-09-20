@@ -23,6 +23,13 @@ Vision can use the AI Gateway, Google Gemini, or Anthropic directly. Set
 - Phone as camera: open `http://<laptop-lan-ip>:3000/source/phone` on a phone on the same Wi-Fi, set the hub to `ws://<laptop-lan-ip>:8787`, Start. (Camera needs a secure context: use `next dev --experimental-https` or a localhost tunnel.)
 - Hub health: `curl localhost:8787/health`
 
+Dropbox Phase A uses an App Folder: set `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`,
+and `DROPBOX_COOKIE_SECRET`, then run `cd apps/web && pnpm dropbox:auth` once to
+obtain `DROPBOX_REFRESH_TOKEN`. The app reports Dropbox as not connected when no
+refresh token is configured. `/library` connection and build-record export are
+implemented; manual sync, PDF ingestion, and persistent photo inventory are
+planned for Phases B–D.
+
 ## Glasses (primary source)
 
 The Ray-Ban Meta glasses are the primary observation source: an online `kind: "glasses"` source wins over the phone, which wins over anything else (`lib/sources.ts`, override via the dropdown under the feed). The header chip shows online/offline, fps and last-frame age. `/scan` fills the inventory continuously from what the wearer looks at (≤ 1 fps, prefers frames after the hub's motion `settled`, dedupes `seq`, one vision call in flight, max-not-sum over the last 8 processed frames, hand-edited rows pinned until Reset, hard cap `30` vision calls/min); the guide shows a live PiP with the active step's parts highlighted, auto-verifies after `motion.active → settled` (once per 10 s per step, header off switch, never during a manual Check) and speaks everything wearer-relevant as `say` control messages.
@@ -60,6 +67,7 @@ For LEGO, `0 !RC TITLE …` and `0 !RC TEXT …` meta lines before a `0 STEP` se
 - [ ] **M4b** glasses bridge app (`apps/glasses-bridge-*`) speaking the hub protocol; TTS of `say` messages
 - [ ] **M5** demo assets (real manuals for the chosen LEGO set, reference photos for vision, marker mat), rehearsal, recorded fallback
 - Vision verifier (`/api/verify`) is implemented and returns `unsure` with a plain hint when the hub or provider is unavailable; **Mark done** always works.
+- Dropbox Phase A build-record export and `/library` connection are complete; Phases B–D are planned.
 
 ### Replan
 
