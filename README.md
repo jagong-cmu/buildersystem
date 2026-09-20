@@ -37,8 +37,8 @@ For LEGO, `0 !RC TITLE …` and `0 !RC TEXT …` meta lines before a `0 STEP` se
 - [x] **M0** workspace, core types, plugin interface, LEGO/breadboard/fabric loaders, 8 sample manuals, matcher + substitutions, tests
 - [x] **M1** scrollable guide with sticky viewport; LEGO 3D renderer (procedural bricks, fly-in, ghosting, auto-frame, snapshot); breadboard SVG renderer; fabric SVG renderer (cut layout + seams); possible-builds screen with buckets, substitution/missing chips, shop-the-gap links
 - [x] **M2** stream hub (frames, ring buffer, control bus, motion detector, probe queue), phone PWA source, `/scan` with live feed + editable inventory, vision inventory API, `/live` debug
-- [ ] **M3** UNO Q probe agent + firmware (`services/unoq-agent`), hardware verifier wired into the guide (the hub's `/probe/*` queue and the step `probes` are ready)
-- [ ] **M4** glasses bridge app (`apps/glasses-bridge-*`) speaking the hub protocol; TTS of `say` messages
+- [x] **M3** vision verifier, step badges, adaptive replan (see below). The UNO Q hardware verifier (`services/unoq-agent`, hub `/probe/*`) is **parked and out of scope**; the breadboard route falls back to vision.
+- [ ] **M4** glasses as the core: simulator + glasses-first web UX (in progress, `feat/glasses-core`), then the native bridge app (`apps/glasses-bridge-*`) with TTS of `say` messages
 - [ ] **M5** demo assets (real manuals for the chosen LEGO set, reference photos for vision, marker mat), rehearsal, recorded fallback
 - Vision verifier (`/api/verify`) is implemented and returns `unsure` with a plain hint when the hub or provider is unavailable; **Mark done** always works.
 
