@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { InventoryEditor } from "./InventoryEditor";
 import { LiveFeed } from "./LiveFeed";
+import { ScanControls } from "./ScanControls";
 import { DOMAIN_LABEL } from "@/lib/format";
-import type { Inventory } from "@/core/types";
+import { postInventory } from "@/lib/inventory-client";
 
 export function ScanView() {
   const [domain] = useDomain();
   const [inventory, setInventory] = useInventory(domain);
+  const [sourceId, setSourceId] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,14 +19,9 @@ export function ScanView() {
     setBusy("Identifying parts…");
     setError(null);
     try {
-      const fd = new FormData();
-      fd.append("domain", domain);
-      fd.append("sourceId", sourceId);
-      fd.append("image", blob, "frame.jpg");
-      const res = await fetch("/api/inventory", { method: "POST", body: fd });
-      if (!res.ok) throw new Error((await res.json()).error ?? `HTTP ${res.status}`);
-      const inv = (await res.json()) as Inventory;
-      setInventory(inv);
+      const inv = await postInventory(domain, sourceId, [blob]);
+      if (!inv) setError("busy — dropped");
+      else setInventory(inv);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -36,7 +33,8 @@ export function ScanView() {
     <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 p-5 max-w-7xl mx-auto">
       <section className="space-y-3">
         <h1 className="text-xl font-semibold">Scan · {DOMAIN_LABEL[domain]}</h1>
-        <LiveFeed onSnapshot={(blob, sourceId) => recognize(blob, sourceId)} busy={busy} />
+        <LiveFeed onSnapshot={(blob, sourceId) => recognize(blob, sourceId)} onSourceChange={setSourceId} busy={busy} />
+        <ScanControls domain={domain} sourceId={sourceId} onResult={setInventory} onError={setError} onBusy={setBusy} />
         <div className="flex items-center gap-3">
           <label className="btn">
             Upload photo

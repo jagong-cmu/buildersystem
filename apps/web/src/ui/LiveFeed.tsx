@@ -3,12 +3,30 @@
 import { useEffect, useRef, useState } from "react";
 import { decodeFrameMessage, fetchSources, HUB_WS, type SourceStatus } from "@/lib/hub";
 
-export function LiveFeed({ onSnapshot, busy, compact }: { onSnapshot?: (blob: Blob, sourceId: string) => void; busy?: string | null; compact?: boolean }) {
+export function LiveFeed({
+  onSnapshot,
+  busy,
+  compact,
+  onSourceChange,
+}: {
+  onSnapshot?: (blob: Blob, sourceId: string) => void;
+  busy?: string | null;
+  compact?: boolean;
+  onSourceChange?: (id: string) => void;
+}) {
   const [sources, setSources] = useState<SourceStatus[]>([]);
   const [sourceId, setSourceId] = useState<string>("");
   const [status, setStatus] = useState<"connecting" | "live" | "offline">("connecting");
   const imgRef = useRef<HTMLImageElement>(null);
   const lastBlob = useRef<Blob | null>(null);
+  const onSourceChangeRef = useRef(onSourceChange);
+  useEffect(() => {
+    onSourceChangeRef.current = onSourceChange;
+  }, [onSourceChange]);
+
+  useEffect(() => {
+    onSourceChangeRef.current?.(sourceId);
+  }, [sourceId]);
 
   useEffect(() => {
     let alive = true;
