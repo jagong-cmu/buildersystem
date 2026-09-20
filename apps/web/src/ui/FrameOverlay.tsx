@@ -71,8 +71,9 @@ export function FrameOverlay({
                 }}
               >
                 {showLabel && <span
-                  className="absolute left-0 -top-5 whitespace-nowrap px-1.5 py-0.5 rounded text-[11px] font-medium"
-                  style={{ background: color, color: "#111", maxWidth: "min(16rem, 60vw)", overflow: "hidden", textOverflow: "ellipsis" }}
+                  className={`absolute left-0 ${i % 2 ? "-bottom-5" : "-top-5"} whitespace-nowrap px-1.5 py-0.5 rounded text-[11px] font-medium`}
+                  style={{ background: color, color: "#111", maxWidth: `max(${Math.round(r.w)}px, 7rem)`, overflow: "hidden", textOverflow: "ellipsis" }}
+                  title={name}
                 >
                   {boxes.length > 1 ? `${name} · ${i + 1}/${boxes.length}` : `${d.qty} × ${name}`}
                 </span>}
