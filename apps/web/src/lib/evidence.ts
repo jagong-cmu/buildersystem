@@ -48,9 +48,9 @@ async function resolveSource(sourceId?: string) {
 export async function captureEvidence(input: CaptureEvidenceInput): Promise<CaptureEvidenceResult> {
   const verifiedAt = Date.now();
   const source = await resolveSource(input.sourceId);
-  const evidenceId = `${input.manualId}/${input.step}-${verifiedAt}`;
-  const directory = path.join(CACHE_ROOT, input.manualId);
   const prefix = `${String(input.step).padStart(2, "0")}-${verifiedAt}`;
+  const evidenceId = `${input.manualId}/${prefix}`;
+  const directory = path.join(CACHE_ROOT, input.manualId);
   const base: CaptureEvidenceResult = {
     evidenceId,
     sourceId: source?.id,
