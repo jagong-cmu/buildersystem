@@ -46,7 +46,7 @@ export function FrameOverlay({
       {image &&
         detections
           .filter((d) => d.bbox || d.boxes?.length)
-          .flatMap((d) => {
+          .flatMap((d, di) => {
             const boxes = d.boxes?.length ? d.boxes : [d.bbox!];
             const hot = highlight?.has(keyOf(d)) || (highlight && d.color && highlight.has(`${d.partType}|`));
             const faded = dimOthers && highlight && !hot;
@@ -57,7 +57,7 @@ export function FrameOverlay({
             const r = bboxToRect(bbox, image);
             return (
               <div
-                key={`${keyOf(d)}#${i}`}
+                key={`${keyOf(d)}#${di}.${i}`}
                 className="absolute rounded-sm"
                 style={{
                   left: r.x,
