@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { InventoryEditor } from "./InventoryEditor";
 import { LiveFeed } from "./LiveFeed";
+import { ScrapMeasure } from "./ScrapMeasure";
 import { DOMAIN_LABEL } from "@/lib/format";
 import type { Inventory } from "@/core/types";
 
@@ -12,10 +13,12 @@ export function ScanView() {
   const [inventory, setInventory] = useInventory(domain);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastFrame, setLastFrame] = useState<Blob | null>(null);
 
   async function recognize(blob: Blob, sourceId: string) {
     setBusy("Identifying parts…");
     setError(null);
+    setLastFrame(blob);
     try {
       const fd = new FormData();
       fd.append("domain", domain);
@@ -53,6 +56,7 @@ export function ScanView() {
           {busy && <span className="muted text-sm">{busy}</span>}
           {error && <span className="chip warn">{error}</span>}
         </div>
+        {domain === "fabric" && <ScrapMeasure frame={lastFrame} inventory={inventory} onChange={setInventory} />}
       </section>
       <section className="space-y-3">
         <div className="flex items-center justify-between">
