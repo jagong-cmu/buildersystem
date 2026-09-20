@@ -7,6 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "test": "vitest run",
+    "sim": "tsx scripts/glasses-sim.mts",
+    "record": "tsx scripts/record.mts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
