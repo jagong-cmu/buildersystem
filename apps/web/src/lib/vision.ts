@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { z } from "zod";
+import type { VisionPart } from "@/core/feedback";
 
 const defaultVisionModel = () =>
   process.env.GOOGLE_GENERATIVE_AI_API_KEY
@@ -50,6 +51,8 @@ export async function visionObject<S extends z.ZodTypeAny>(opts: {
   model?: string;
   /** Latency-sensitive call (live scan): disable model thinking where the provider supports it. */
   fast?: boolean;
+  /** Few-shot context (labelled reference images) placed before `text` and `images`. */
+  prefix?: VisionPart[];
 }): Promise<z.infer<S>> {
   const model = visionModel(opts.model);
   if (!model) throw new Error("No vision provider configured: set AI_GATEWAY_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or ANTHROPIC_API_KEY in apps/web/.env.local");
@@ -62,6 +65,7 @@ export async function visionObject<S extends z.ZodTypeAny>(opts: {
       {
         role: "user",
         content: [
+          ...(opts.prefix ?? []).map((p) => (p.type === "text" ? { type: "text" as const, text: p.text } : { type: "file" as const, mediaType: p.mediaType, data: p.data })),
           { type: "text", text: opts.text },
           ...opts.images.map((im) => ({ type: "file" as const, mediaType: im.mediaType, data: im.data })),
         ],

@@ -4,6 +4,8 @@ import type { DomainId, Inventory, InventoryItem } from "@/core/types";
 import sharp from "sharp";
 import { SANITIZE_BY_DOMAIN, inventoryPrompt, inventorySchema, itemsFromOutput, makeInventory } from "@/core/inventory";
 import { VISION_MOCK, imageHash, visionObject } from "@/lib/vision";
+import { exemplarParts } from "@/core/feedback";
+import { loadExemplars } from "@/lib/feedback";
 
 /** Long edge sent to the vision model; larger frames only add upload time and latency. */
 const MAX_EDGE = 1024;
@@ -33,11 +35,13 @@ export async function detectInventory(
 ): Promise<Inventory> {
   const plugin = getPlugin(domain);
   if (VISION_MOCK) return makeInventory(domain, mockItems(plugin, imageHash(images)), sourceId);
+  const [prepared, exemplars] = await Promise.all([Promise.all(images.map(prepareImage)), loadExemplars(domain).catch(() => [])]);
   const out = await visionObject({
     schema: inventorySchema(plugin),
     system: inventoryPrompt(plugin),
+    prefix: exemplarParts(exemplars),
     text: text ?? "Identify the parts on the table.",
-    images: await Promise.all(images.map(prepareImage)),
+    images: prepared,
     fast: true,
   });
   return makeInventory(domain, itemsFromOutput(out, SANITIZE_BY_DOMAIN[domain]), sourceId);
