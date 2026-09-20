@@ -25,12 +25,14 @@ piece and every crop is classified by Brickognize. With no vision provider
 configured the whole frame is sent as a single piece. `BRICKOGNIZE=0` reverts to
 vision-model classification for LEGO.
 
-Breadboard parts have no public equivalent of Brickognize, so when `HF_TOKEN` is
-set each vision-model crop is re-classified zero-shot by CLIP
-(`openai/clip-vit-large-patch14` on the Hugging Face Inference API) against the
-kit vocabulary; a confident CLIP pick overrides the vision label. Resistor values
-are collapsed into one label (bands are left to the vision model).
-`PART_CLASSIFIER=0` disables it, `PART_CLASSIFIER_MODEL` swaps the model.
+Breadboard parts have no public equivalent of Brickognize, so each vision-model
+crop is re-classified zero-shot by CLIP (`Xenova/clip-vit-large-patch14`, run
+locally with transformers.js / onnxruntime, no key) against the kit vocabulary; a
+confident CLIP pick overrides the vision label. Weights (~1.6 GB) download once
+into `~/.cache/buildersystem-models` on the first scan (`pnpm --filter web
+models:warm` prefetches them). Resistor values and LED colours are collapsed into
+one label each (bands/colour are left to the vision model). `PART_CLASSIFIER=0`
+disables it, `PART_CLASSIFIER_MODEL` swaps the model.
 
 - Web app: http://localhost:3000 — `/scan`, `/builds`, `/guide/<manualId>`, `/live`
 - Phone as camera: open `http://<laptop-lan-ip>:3000/source/phone` on a phone on the same Wi-Fi, set the hub to `ws://<laptop-lan-ip>:8787`, Start. (Camera needs a secure context: use `next dev --experimental-https` or a localhost tunnel.)

@@ -11,6 +11,7 @@
     "eval:vision": "tsx --env-file=.env.local scripts/eval-vision.ts",
     "eval:promptfoo": "promptfoo eval -c promptfooconfig.yaml --env-file .env.local --no-cache",
     "manuals:index": "tsx scripts/index-manuals.ts",
+    "models:warm": "tsx scripts/warm-models.ts",
     "dropbox:seed": "tsx --env-file=.env.local scripts/dropbox-seed.ts",
     "dropbox:auth": "tsx --env-file=.env.local scripts/dropbox-auth.ts",
     "predev": "pnpm manuals:index",
@@ -20,6 +21,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.58",
     "@ai-sdk/google": "4.0.69",
+    "@huggingface/transformers": "4.2.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "ai": "^7.0.107",
