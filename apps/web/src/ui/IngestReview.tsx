@@ -83,6 +83,7 @@ export function IngestReview({ domain, id }: { domain: DomainId; id: string }) {
       </section>
       <section className="panel p-4 space-y-4">
         <div className="flex gap-2 flex-wrap">{draft.steps.map((item, index) => <button key={index} className={`chip ${index === selected ? "info" : ""}`} onClick={() => setSelected(index)}>step {index + 1}</button>)}</div>
+        {draft.detectedDomain && draft.detectedDomain !== domain && <span className="chip warn">detected domain: {draft.detectedDomain} (folder: {domain})</span>}
         {step && <div className="space-y-3">
           <textarea className="w-full rounded border bg-transparent p-2" rows={4} value={step.text} onChange={(event) => updateStep({ text: event.target.value })} />
           <div className={`chip ${step.confidence < 0.7 ? "warn" : "ok"}`}>confidence {(step.confidence * 100).toFixed(0)}%</div>
