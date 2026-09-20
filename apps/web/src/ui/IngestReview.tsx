@@ -24,13 +24,22 @@ export function IngestReview({ domain, id }: { domain: DomainId; id: string }) {
   const step = draft?.steps[selected];
   const page = step?.region.page ?? 1;
 
-  async function load() {
-    const response = await fetch(`/api/dropbox/ingest?domain=${domain}&id=${encodeURIComponent(id)}`);
-    if (!response.ok) throw new Error((await response.json()).error);
-    setDraft(await response.json());
-  }
   useEffect(() => {
-    load().catch((reason) => setError((reason as Error).message));
+    let active = true;
+    fetch(`/api/dropbox/ingest?domain=${domain}&id=${encodeURIComponent(id)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error((await response.json()).error);
+        return response.json() as Promise<Draft>;
+      })
+      .then((value) => {
+        if (active) setDraft(value);
+      })
+      .catch((reason) => {
+        if (active) setError((reason as Error).message);
+      });
+    return () => {
+      active = false;
+    };
   }, [domain, id]);
 
   function updateStep(patch: Partial<DraftStep>) {
