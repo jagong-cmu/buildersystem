@@ -51,6 +51,21 @@ pnpm --filter stream-hub record -- --source glasses --dir recordings/take1 [--se
 pnpm --filter stream-hub sim -- --dir recordings/take1 --loop
 ```
 
+### Hands-free polish (Phase 3)
+
+- **State estimation on join.** Opening a guide at the overview with glasses online renders every step offscreen once per manual (`ui/StepSnapshots.tsx`, cached for the page lifetime), POSTs the current glasses frame plus the snapshots to `/api/estimate-step`, and if the answer is a confident step ≥ 2 speaks *“It looks like you're at step N. Continue from there?”* with a 5 s window to object (header chip **No, start at 1**, `k`/←, or a `prev` control message). Silence accepts: steps < N are marked verified and the guide jumps to N. Navigating during the window cancels the proposal. `VISION_MOCK=1` returns a deterministic estimate.
+- **Where is it.** Each row in **In your view** has a **where?** button; `w` speaks all callouts; the bridge (or anything) can POST `{"type":"where","partType"?,"color"?}` to `/control`. Answers use the latest bbox: *“blue Plate 1x4: bottom left of your view.”* or *“… not in view. Look around the pile.”*
+- **Remote navigation.** `{"type":"nav","path":"/builds"}` moves the laptop tab (same-origin paths only).
+- **Recorded demo mode.**
+
+  ```bash
+  pnpm demo:replay                              # hub (if not up) + recordings/demo: frames as source glasses + operator controls
+  pnpm demo:replay -- --dir recordings/take1 --speed 2 --no-loop
+  pnpm demo:replay -- --check --speed 4         # CI self-test, exits 0 when frames + controls went through
+  ```
+
+  Replays a `record` folder: frames at their recorded spacing (looping until the controls finish), and the operator messages from `control.jsonl` (`nav`, `scan.start/stop`, `check`, `next`, `prev`, `part.missing`, `where` — app-emitted messages are skipped) at their recorded offsets. `recordings/demo` walks `/scan → /builds → /guide/phone_stand → next → where → check → next` with the browser untouched; run the web app with `VISION_MOCK=1` for a deterministic run.
+
 Real glasses: the iOS bridge in `apps/glasses-bridge-ios` (Meta Wearables DAT 0.9.0) streams the glasses camera into the hub as source `glasses`, exposes Scan / Check / Next / Prev / Missing buttons and speaks every `say` message. Setup, Mock Device Kit workflow and the on-device checklist are in [`docs/glasses-bridge.md`](docs/glasses-bridge.md).
 
 ## Add a manual
@@ -67,6 +82,7 @@ For LEGO, `0 !RC TITLE …` and `0 !RC TEXT …` meta lines before a `0 STEP` se
 - [ ] **M3** UNO Q probe agent + firmware (`services/unoq-agent`), hardware verifier wired into the guide (the hub's `/probe/*` queue and the step `probes` are ready)
 - [x] **M4a** glasses-first web: simulator + recorder, primary-source model, continuous inventory, detection overlay, hands-free guide (auto-verify + narration)
 - [~] **M4b** glasses bridge app (`apps/glasses-bridge-ios`) speaking the hub protocol; TTS of `say` messages — written against the DAT 0.9.0 interfaces + Mock Device Kit, awaiting a Mac build and the on-device checklist
+- [x] **M4c** hands-free polish: state estimation on join (renderer snapshots + `/api/estimate-step`, spoken 5 s proposal), “where is it”, `pnpm demo:replay`
 - [ ] **M5** demo assets (real manuals for the chosen LEGO set, reference photos for vision, marker mat), rehearsal, recorded fallback
 - Vision verifier (`/api/verify`) is implemented and returns `unsure` with a plain hint when the hub or provider is unavailable; **Mark done** always works.
 - Dropbox Phase A build-record export and Phase B manual sync with `/library` listings are complete; Phases C–D are planned.

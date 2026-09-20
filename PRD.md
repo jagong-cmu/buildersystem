@@ -171,6 +171,11 @@ Default platform: whichever phone a teammate owns; the iOS route needs Xcode on 
 
 Every demo screen must work with sources (1) and (2).
 
+### 7.4 Hands-free polish — built (Phase 3)
+- **State estimation on join:** renderer snapshots for steps 1..N are produced once per manual in the browser (offscreen `StepSnapshots`) and posted with the current glasses frame to `/api/estimate-step`; a confident step ≥ 2 is proposed by voice with a 5 s objection window (`prev`, ←/`k`, header button). Accepting marks earlier steps verified; navigating cancels the proposal. Emits `step.estimated`.
+- **Where is it:** `where` control message (or **where?** / `w` in the guide) → `say` with the callout's location from the latest bbox, or a "not in view" prompt.
+- **Recorded demo mode:** `pnpm demo:replay` (`services/stream-hub/scripts/replay.mts`) replays a `record` folder's frames as source `glasses` and its operator control messages (`nav`, `scan.*`, `check`, `next`, `prev`, `part.missing`, `where`) at recorded offsets; `--check` is the CI self-test. New additive control types: `where`, `nav`, `step.estimated`.
+
 ---
 
 ## 8. Stream hub (`services/stream-hub`)

@@ -6,6 +6,7 @@ import { DomainSwitch } from "@/ui/DomainSwitch";
 import { NarrationToggle } from "@/ui/NarrationToggle";
 import { GlassesChip } from "@/ui/GlassesChip";
 import { AutoVerifyToggle } from "@/ui/AutoVerifyToggle";
+import { RemoteNav } from "@/ui/RemoteNav";
 import { dropboxEnabled } from "@/lib/dropbox/client";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="h-full flex flex-col">
+        <RemoteNav />
         <header className="flex items-center flex-wrap gap-x-4 gap-y-2 px-5 py-3 border-b" style={{ borderColor: "var(--line)" }}>
           <Link href="/" className="font-semibold tracking-tight">
             Reality Compiler

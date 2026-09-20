@@ -16,9 +16,11 @@ import { useInventory } from "@/lib/inventory-store";
 import { AutoVerify } from "@/lib/auto-verify";
 import { detectionsFor, useDetections } from "@/lib/detections";
 import { keyOf, locationPhrase } from "@/lib/live-inventory";
+import { ObjectionWindow, matchCallout, proposalPhrase, shouldPropose, wherePhrase, type StepEstimate } from "@/lib/hands-free";
 import { usePrimarySource } from "@/lib/sources";
 import { FrameOverlay } from "./FrameOverlay";
 import { LiveFeed } from "./LiveFeed";
+import { StepSnapshots } from "./StepSnapshots";
 import { useAutoVerifyPref } from "./useHandsFree";
 import { useLiveInventory } from "./useLiveInventory";
 
@@ -110,6 +112,12 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const [saved, setSaved] = useState<SavedBuild | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const startedAt = useRef<number | null>(null);
+  // State estimation on join: runs once when the guide opens on the overview with glasses online.
+  const [estimatePhase, setEstimatePhase] = useState<"idle" | "snapshots" | "asking" | "done">("idle");
+  const [proposal, setProposal] = useState<{ step: number; left: number } | null>(null);
+  const objection = useRef<ObjectionWindow | null>(null);
+  const objectionTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const latestDetections = useRef(detections.items);
   const registerSnapshot = useCallback((fn: () => Promise<Blob | null>) => {
     snapshot.current = fn;
   }, []);
@@ -174,7 +182,118 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   useEffect(() => {
     activeRef.current = active;
     verifyRef.current = verify;
-  }, [active, verify]);
+    latestDetections.current = detections.items;
+  }, [active, verify, detections.items]);
+
+  /** "Where is it": speak the location of the asked-for callout(s) of the active step from the latest bboxes. */
+  const sayWhere = useCallback((query?: string, color?: string) => {
+    const s = activeRef.current > 0 ? manual.steps[activeRef.current - 1] : null;
+    if (!s) return;
+    const targets = matchCallout(s.callouts, (c) => reqLabel(manual.domain, c), query, color);
+    if (!targets.length) {
+      sendControl({ type: "say", text: `${query ?? "That part"} isn't needed for step ${s.n}.` });
+      return;
+    }
+    const text = targets.map((c) => wherePhrase(reqLabel(manual.domain, c), latestDetections.current, c)).join(" ");
+    sendControl({ type: "say", text });
+  }, [manual]);
+  const latestSayWhere = useRef(sayWhere);
+  useEffect(() => {
+    latestSayWhere.current = sayWhere;
+  }, [sayWhere]);
+
+  const objectToProposal = useCallback(() => {
+    if (!objection.current) return;
+    objection.current.object();
+    if (objectionTimer.current) clearInterval(objectionTimer.current);
+    objectionTimer.current = null;
+    objection.current = null;
+    setProposal(null);
+    setEstimatePhase("done");
+    sendControl({ type: "step.estimated", manualId: manual.id, step: 0, conf: 0, accepted: false });
+    sendControl({ type: "say", text: "Okay, starting from step 1." });
+  }, [manual.id]);
+
+  const latestObject = useRef(objectToProposal);
+  useEffect(() => {
+    latestObject.current = objectToProposal;
+  }, [objectToProposal]);
+
+  const acceptProposal = useCallback((step: number) => {
+    setVerify((v) => {
+      const next = { ...v };
+      for (let n = 1; n < step; n++) next[n] = { manualId: manual.id, step: n, status: "verified", hint: "estimated from your view" };
+      return next;
+    });
+    sendControl({ type: "step.estimated", manualId: manual.id, step, conf: 1, accepted: true });
+    goTo(step);
+  }, [manual.id, goTo]);
+
+  const onEstimate = useCallback((est: StepEstimate) => {
+    if (!shouldPropose(est, total)) {
+      setEstimatePhase("done");
+      return;
+    }
+    const win = ObjectionWindow.open(est.step);
+    objection.current = win;
+    setProposal({ step: est.step, left: win.secondsLeft() });
+    setEstimatePhase("asking");
+    sendControl({ type: "say", text: proposalPhrase(est.step) });
+    objectionTimer.current = setInterval(() => {
+      const w = objection.current;
+      if (!w) return;
+      const r = w.tick();
+      if (r === "pending") {
+        setProposal({ step: w.step, left: w.secondsLeft() });
+        return;
+      }
+      if (objectionTimer.current) clearInterval(objectionTimer.current);
+      objectionTimer.current = null;
+      objection.current = null;
+      setProposal(null);
+      setEstimatePhase("done");
+      if (r === "accept") acceptProposal(w.step);
+    }, 250);
+  }, [total, acceptProposal]);
+
+  const onStepSnapshots = useCallback(async (snaps: Map<number, Blob>) => {
+    try {
+      const fd = new FormData();
+      fd.append("manualId", manual.id);
+      if (primaryId) fd.append("sourceId", primaryId);
+      snaps.forEach((blob, n) => fd.append(`step_${n}`, blob, `step-${n}.png`));
+      const res = await fetch("/api/estimate-step", { method: "POST", body: fd });
+      const est = (await res.json()) as StepEstimate;
+      // Only propose if the wearer is still on the overview; otherwise they've already chosen.
+      if (activeRef.current === 0) onEstimate(est);
+      else setEstimatePhase("done");
+    } catch {
+      setEstimatePhase("done");
+    }
+  }, [manual.id, primaryId, onEstimate]);
+
+  useEffect(() => {
+    if (estimatePhase !== "idle" || !live || active !== 0) return;
+    if (new URLSearchParams(window.location.search).get("step")) return;
+    // Give the glasses feed a beat to deliver a frame before we compare against it.
+    const t = setTimeout(() => setEstimatePhase("snapshots"), 1500);
+    return () => clearTimeout(t);
+  }, [estimatePhase, live, active]);
+  // Navigating while the proposal is open means the wearer has chosen: drop it silently.
+  useEffect(() => {
+    if (active === 0 || !objection.current) return;
+    if (objectionTimer.current) clearInterval(objectionTimer.current);
+    objectionTimer.current = null;
+    objection.current = null;
+    const t = setTimeout(() => {
+      setProposal(null);
+      setEstimatePhase("done");
+    }, 0);
+    return () => clearTimeout(t);
+  }, [active]);
+  useEffect(() => () => {
+    if (objectionTimer.current) clearInterval(objectionTimer.current);
+  }, []);
 
   useEffect(() => {
     autoVerify.current.enabled = autoVerifyOn;
@@ -204,7 +323,13 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       }
       // Remote operator controls (glasses bridge / phone PWA buttons).
       if (msg.type === "next") return latestGoTo.current(activeRef.current + 1);
-      if (msg.type === "prev") return latestGoTo.current(activeRef.current - 1);
+      if (msg.type === "prev") {
+        if (objection.current) return latestObject.current();
+        return latestGoTo.current(activeRef.current - 1);
+      }
+      if (msg.type === "where") {
+        return latestSayWhere.current(typeof msg.partType === "string" ? msg.partType : undefined, typeof msg.color === "string" ? msg.color : undefined);
+      }
       if (msg.type === "check" && msg.origin !== "guide") {
         const step = typeof msg.step === "number" && msg.step > 0 ? msg.step : activeRef.current;
         if (step > 0) void latestCheck.current(step);
@@ -259,8 +384,10 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       }
       if (e.key === "k" || e.key === "ArrowUp" || e.key === "ArrowLeft") {
         e.preventDefault();
-        goTo(active - 1);
+        if (objection.current) objectToProposal();
+        else goTo(active - 1);
       }
+      if (e.key === "w") sayWhere();
       if (e.key === "Escape") {
         setDrawer(false);
         setMissingOpen(false);
@@ -268,7 +395,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, goTo]);
+  }, [active, goTo, objectToProposal, sayWhere]);
 
   /** Speak the outcome and, on verified, count down and advance (PRD §14.3 hands-free). */
   const startCountdown = useCallback((step: number) => {
@@ -280,7 +407,8 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
         if (c.left <= 1) {
           if (countdownTimer.current) clearInterval(countdownTimer.current);
           countdownTimer.current = null;
-          goTo(c.step + 1);
+          // The wearer may have moved on during the countdown; never pull them back.
+          if (activeRef.current === c.step) goTo(c.step + 1);
           return null;
         }
         return { ...c, left: c.left - 1 };
@@ -290,10 +418,20 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   useEffect(() => () => {
     if (countdownTimer.current) clearInterval(countdownTimer.current);
   }, []);
+  // Leaving a step cancels its countdown chip.
+  useEffect(() => {
+    if (!countdownTimer.current) return;
+    clearInterval(countdownTimer.current);
+    countdownTimer.current = null;
+    const t = setTimeout(() => setCountdown(null), 0);
+    return () => clearTimeout(t);
+  }, [active]);
 
   const settle = useCallback((step: number, r: VerifyResult) => {
     setVerify((v) => ({ ...v, [step]: r }));
     if (r.status === "verified") {
+      // A late result for a step we've already left: record it, don't narrate or count down.
+      if (activeRef.current !== step) return;
       if (step >= total) {
         sendControl({ type: "say", text: `Step ${step} verified. Build complete.` });
         return;
@@ -430,6 +568,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
         <Renderer manual={manual as never} step={active} direction={direction} registerSnapshot={registerSnapshot} />
       </div>
       <div className="stage-vignette" />
+      {estimatePhase === "snapshots" && <StepSnapshots manual={manual} onDone={onStepSnapshots} />}
 
       <div className="progress">
         <div className="progress-fill" style={{ width: `${(active / total) * 100}%` }} />
@@ -442,6 +581,13 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
           <span className="font-medium">{manual.title}</span>
         </div>
         <div className="ml-auto flex items-center gap-2 pointer-events-auto">
+          {estimatePhase === "snapshots" && <span className="chip" title="comparing your view with each step">looking at your build…</span>}
+          {proposal && (
+            <span className="chip info" data-testid="step-proposal">
+              looks like step {proposal.step} · continuing in {proposal.left}s
+              <button className="underline ml-1" onClick={objectToProposal}>No, start at 1</button>
+            </span>
+          )}
           {countdown && (
             <span className="chip ok" title="auto-advancing">
               verified · next in {countdown.left}s
@@ -540,6 +686,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
                     {reqLabel(manual.domain, req)} — {where ?? "not in view"}
                     {where && qty < req.qty ? ` (${qty} seen)` : ""}
                   </span>
+                  <button className="btn sm ml-auto" title="say where it is" aria-label={`where is ${reqLabel(manual.domain, req)}`} onClick={() => sayWhere(req.partType, req.color)}>where?</button>
                 </div>
               ))}
             </div>
