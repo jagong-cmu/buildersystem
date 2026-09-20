@@ -181,16 +181,44 @@ final class GlassesStream: ObservableObject {
             }
             self.session = session
             session.errorPublisher.listen { [weak self] error in
-                Task { @MainActor [weak self] in self?.lastError = String(describing: error) }
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    let message = Self.explain(sessionError: error)
+                    self.lastError = message
+                    if self.phase == .streaming { self.phase = .error(message) }
+                }
             }.store(in: tokens)
 
-            try session.start()
+            // Errors and states arrive on separate streams; subscribe to both
+            // before start() so a start failure is reported as the SDK's own
+            // reason rather than as a timeout / "stopped before it started".
+            let states = session.stateStream()
+            let errors = session.errorStream()
+            do {
+                try session.start()
+            } catch {
+                throw StreamError.failed(Self.explain(sessionError: error))
+            }
             try await withTimeout(seconds: 15, or: StreamError.failed("timed out connecting to the glasses")) {
-                for await state in session.stateStream() {
-                    if state == .started { return }
-                    if state == .stopped { throw StreamError.failed("session stopped before it started") }
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    group.addTask {
+                        for await state in states {
+                            if state == .started { return }
+                            if state == .stopped { throw StreamError.failed("session stopped before it started") }
+                        }
+                        throw StreamError.failed("session state stream ended")
+                    }
+                    group.addTask {
+                        for await error in errors {
+                            throw StreamError.failed(Self.explain(sessionError: error))
+                        }
+                        // Error stream finished without an error; leave the
+                        // outcome to the state task.
+                        while true { try await Task.sleep(nanoseconds: 1_000_000_000) }
+                    }
+                    try await group.next()!
+                    group.cancelAll()
                 }
-                throw StreamError.failed("session state stream ended")
             }
 
             // The SDK accepts 2/7/15/24/30 fps; we ask for the lowest rate that
@@ -243,6 +271,31 @@ final class GlassesStream: ObservableObject {
         streamState = "stopped"
         sourceFps = 0
         phase = .idle
+    }
+
+    /// Turns a `DeviceSessionError` into something the wearer can act on. The
+    /// SDK's own text for the DAM start failure is just "Device unavailable".
+    static func explain(sessionError error: Error) -> String {
+        let raw = String(describing: error)
+        guard let sessionError = error as? DeviceSessionError else { return raw }
+        switch sessionError {
+        case .noEligibleDevice:
+            return "No eligible glasses: they must be on, hinges open, connected in Meta AI, and worn."
+        case .dwaUnavailable:
+            return "The DAT app on the glasses isn't reachable. Put the glasses on, make sure Meta AI shows them connected, and check Meta AI → your glasses → App Connections."
+        case .datAppOnTheGlassesUpdateRequired:
+            return "The DAT app on the glasses needs an update: Meta AI → your glasses → App Connections."
+        case .unexpectedError(let description) where description.localizedCaseInsensitiveContains("unavailable"):
+            return "\(description). The glasses refused the session — usually they aren't being worn, the DAT glasses app needs an update (Meta AI → App Connections), or Wi-Fi is off on the phone (the SDK needs local networking for the camera link)."
+        case .batteryCritical, .thermalCritical, .thermalEmergency, .peakPowerShutdown:
+            return "\(raw) — let the glasses cool down / charge, then try again."
+        default:
+            return raw
+        }
+    }
+
+    func openGlassesAppUpdate() async {
+        do { try await wearables.openDATGlassesAppUpdate() } catch { lastError = error.localizedDescription }
     }
 
     enum StreamError: Error {

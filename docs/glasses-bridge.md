@@ -147,6 +147,38 @@ Record the results in the table at the bottom.
 | --- | --- | --- | --- | --- | --- | --- |
 | _not yet run_ | | | | | | |
 
+## Troubleshooting: "Device unavailable" on Start stream
+
+`Device unavailable` is MWDATCore's text for `start_error_device_unavailable`:
+the glasses (the DAT app running on them, "DWA") refused or never answered the
+session start. It is not the app's own eligibility message, so the glasses
+were already `connected · compatible` — the problem is one layer further in.
+Work through these in order, re-running **Start stream** after each:
+
+1. **Info.plist link keys.** DAT 0.8+ sets up a Wi-Fi link for the camera and
+   `MWDATCore` refuses to bring up the link unless `NSLocalNetworkUsageDescription`
+   *and* `NSBonjourServices` (`_bonjour._tcp`) are present and non-empty. Builds
+   made before these were added to `project.yml` lack `NSBonjourServices`;
+   re-run `xcodegen generate`, rebuild, reinstall. On first start iOS asks for
+   *Local Network* permission — allow it. Also check *Settings → GlassesBridge*
+   shows Bluetooth **and** Local Network enabled, and that the phone's Wi-Fi is on.
+2. **Wear the glasses.** `AutoDeviceSelector` needs the glasses donned (the
+   mock kit needs *Put on* for the same reason). Hinges open + on your head.
+3. **DAT app on the glasses.** *Meta AI → your glasses → App Connections*: the
+   glasses-side DAT app must be installed/updated and GlassesBridge listed.
+   The bridge shows an *Open App Connections in Meta AI* button when the SDK
+   reports `datAppOnTheGlassesUpdateRequired` / `dwaUnavailable`.
+4. **Stale session.** Only one DAT session may exist per device. Force-quit
+   GlassesBridge (and any other DAT app, e.g. Brownmellon or Meta's
+   CameraAccess sample), toggle the glasses off/on, retry.
+5. **Registration.** Disconnect glasses → Connect glasses to redo the Meta AI
+   handoff; Developer Mode must still be on for these glasses in Meta AI.
+
+The error text now comes straight from the session's error stream during
+start (with the hint above appended) instead of the generic "timed out
+connecting to the glasses", so the Xcode console shows the SDK's own
+`DeviceSessionError` case next to it.
+
 ## Limitations (honest)
 
 - **Background**: iOS suspends the camera stream when the app leaves the

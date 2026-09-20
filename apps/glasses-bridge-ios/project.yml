@@ -43,7 +43,13 @@ targets:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: "GlassesBridge streams the glasses camera to the build assistant hub. In the Simulator the phone camera stands in for the glasses."
         NSBluetoothAlwaysUsageDescription: "Needed to connect to your Ray-Ban Meta glasses."
-        NSLocalNetworkUsageDescription: "GlassesBridge sends frames to the stream hub running on your laptop."
+        NSBluetoothPeripheralUsageDescription: "Needed to connect to your Ray-Ban Meta glasses."
+        # DAT 0.8+ uses a Wi-Fi link for the camera when it can. MWDATCore's
+        # link-availability check wants BOTH keys present and non-empty
+        # ("NSBonjourServices must be present and non-empty"); Meta's
+        # CameraAccess sample ships exactly these values.
+        NSLocalNetworkUsageDescription: "Lets the phone find and connect to the glasses over Wi-Fi, and send frames to the stream hub on your laptop."
+        NSBonjourServices: [_bonjour._tcp]
         # --- Meta DAT requirements (mirrors the SDK's getting-started guide) ---
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
@@ -53,7 +59,7 @@ targets:
         UISupportedExternalAccessoryProtocols: [com.meta.ar.wearable]
         # `audio` keeps narration playing while the screen is locked; it does
         # NOT keep the camera stream alive (see docs/glasses-bridge.md).
-        UIBackgroundModes: [bluetooth-central, external-accessory, audio]
+        UIBackgroundModes: [bluetooth-central, bluetooth-peripheral, external-accessory, audio]
         MWDAT:
           AppLinkURLScheme: "glassesbridge://"
           # "0" = Developer Mode (enabled in the Meta AI app), which is all a
