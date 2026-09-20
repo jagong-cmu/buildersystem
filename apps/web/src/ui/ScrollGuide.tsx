@@ -35,6 +35,30 @@ const BADGE: Record<VerifyStatus, { cls: string; label: string }> = {
   unsure: { cls: "", label: "couldn't confirm" },
 };
 
+interface GuideProgress {
+  active: number;
+  verify: Record<number, VerifyResult>;
+}
+
+const PROGRESS_KEY = (manualId: string) => `rc:guide:${manualId}`;
+
+function readProgress(manualId: string): GuideProgress | null {
+  try {
+    const raw = sessionStorage.getItem(PROGRESS_KEY(manualId));
+    return raw ? (JSON.parse(raw) as GuideProgress) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeProgress(manualId: string, progress: GuideProgress) {
+  try {
+    sessionStorage.setItem(PROGRESS_KEY(manualId), JSON.stringify(progress));
+  } catch {
+    /* private mode etc. */
+  }
+}
+
 interface PlanBanner {
   fromStep: number;
   unresolved: Requirement[];
@@ -57,6 +81,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const match = useMemo(() => matchManual(inventory, manual, plugin.substitutions, MATCH_DEFAULTS[manual.domain], plugin), [inventory, manual, plugin]);
 
   const [active, setActive] = useState(0);
+  const progressLoaded = useRef(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   // PiP is on by default whenever a glasses source is online; the button overrides.
   const { glassesOnline, sourceId: primaryId } = usePrimarySource();
@@ -100,7 +125,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const total = manual.steps.length;
 
   const goTo = useCallback((i: number) => {
-    const next = Math.max(0, Math.min(total, i));
+    const next = Number.isFinite(i) ? Math.max(0, Math.min(total, Math.trunc(i))) : 0;
     setActive((prev) => {
       if (prev !== next) setDirection(next > prev ? "forward" : "back");
       return next;
@@ -284,7 +309,16 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     return subscribeControl((msg) => {
       if (msg.type === "motion" && msg.source === primaryId && (msg.state === "active" || msg.state === "settled")) {
         const step = autoVerify.current.onMotion(msg.state);
-        if (step != null) void latestCheck.current(step, true);
+        if (step != null && verifyRef.current[step]?.status !== "verified") {
+          void latestCheck.current(step, true);
+        }
+        return;
+      }
+      if (msg.type === "next") return latestGoTo.current(activeRef.current + 1);
+      if (msg.type === "prev") return latestGoTo.current(activeRef.current - 1);
+      if (msg.type === "check") {
+        const step = typeof msg.step === "number" && msg.step > 0 ? msg.step : activeRef.current;
+        if (step > 0 && !autoVerify.current.checking) void latestCheck.current(step);
         return;
       }
       // Remote operator controls (glasses bridge / phone PWA buttons).
@@ -318,6 +352,23 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   useEffect(() => () => {
     if (bannerTimer.current) clearTimeout(bannerTimer.current);
   }, []);
+
+  // Progress survives a reload within the tab (PRD §16: no database).
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const saved = readProgress(initial.id);
+      if (saved) {
+        const fromUrl = Number(new URLSearchParams(window.location.search).get("step"));
+        if (!(fromUrl > 0)) setActive(Number.isFinite(saved.active) ? Math.max(0, Math.min(initial.steps.length, Math.trunc(saved.active))) : 0);
+        setVerify(saved.verify ?? {});
+      }
+      progressLoaded.current = true;
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [initial]);
+  useEffect(() => {
+    if (progressLoaded.current) writeProgress(initial.id, { active, verify });
+  }, [initial.id, active, verify]);
 
   useEffect(() => {
     const n = Number(new URLSearchParams(window.location.search).get("step"));
@@ -575,7 +626,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       )}
 
       {/* Parts tally: counts down as steps place parts */}
-      <aside className={`tally panel${tallyOpen ? "" : " collapsed"}`} aria-label="parts remaining">
+      <aside className={`tally panel${tallyOpen ? "" : " collapsed"}${live && feedExpanded ? " feed-open" : ""}`} aria-label="parts remaining">
         <button className="tally-head" onClick={() => setTallyOpen((o) => !o)} aria-expanded={tallyOpen}>
           <span className="font-medium">Parts</span>
           <span className="chip">{partsLeft} left</span>

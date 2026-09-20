@@ -38,6 +38,8 @@ export interface LiveInventoryOptions {
   enabled: boolean;
   /** Write the aggregated window to the inventory store (off on the guide: detections only). */
   writeInventory?: boolean;
+  /** Consume this hub source instead of the primary one (the feed's dropdown override). */
+  sourceId?: string;
   intervalMs?: number;
   maxPerMinute?: number;
   windowSize?: number;
@@ -53,7 +55,10 @@ function readPins(domain: DomainId): Set<string> {
 
 export function useLiveInventory(opts: LiveInventoryOptions) {
   const { domain, enabled, writeInventory: write = true, intervalMs = 1000, maxPerMinute = DEFAULT_CALLS_PER_MINUTE, windowSize = 8 } = opts;
-  const { sourceId, source } = usePrimarySource();
+  const primary = usePrimarySource();
+  const override = opts.sourceId && primary.sources.find((s) => s.id === opts.sourceId);
+  const source = override || primary.source;
+  const sourceId = source?.id ?? "";
   const online = !!source?.online;
   const [frozen, setFrozen] = useState(false);
   const [pinned, setPinned] = useState<Set<string>>(() => new Set());
@@ -70,9 +75,28 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
     pinnedRef.current = pinned;
   }, [pinned]);
 
+  // Pins are shared across tabs through localStorage, like the inventory itself.
   useEffect(() => {
     const timer = setTimeout(() => setPinned(readPins(domain)), 0);
-    return () => clearTimeout(timer);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === PINS_KEY(domain)) setPinned(readPins(domain));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [domain]);
+
+  // The frame window and overlay belong to one domain's vocabulary.
+  const domainRef = useRef(domain);
+  useEffect(() => {
+    if (domainRef.current === domain) return;
+    domainRef.current = domain;
+    windowRef.current.clear();
+    lastSeq.current = undefined;
+    clearDetections();
+    setStats({ processed: 0, skipped: 0, dropped: 0, lastUpdateAt: null, error: null, calls: 0 });
   }, [domain]);
 
   useControlBus((msg) => {
@@ -88,7 +112,7 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
       if (!alive || pending.current || inventoryBusy()) return;
       const now = Date.now();
       if (motion.current === "active" && now - lastProcessedAt.current < ACTIVE_STARVATION_MS) return;
-      const frame = await fetchLatestFrame(sourceId);
+      const frame = await fetchLatestFrame(sourceId).catch(() => null);
       if (!alive || !frame || frame.seq === lastSeq.current) {
         if (frame) setStats((s) => ({ ...s, skipped: s.skipped + 1 }));
         return;

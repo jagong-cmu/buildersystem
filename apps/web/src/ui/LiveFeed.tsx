@@ -31,10 +31,13 @@ export function LiveFeed({
 }) {
   const { sources, sourceId: primaryId, hubOnline } = usePrimarySource();
   const [override, setOverride] = useState<string>("");
-  const sourceId = override && sources.some((s) => s.id === override) ? override : primaryId;
+  // An override sticks while its source is online (or nothing else is); otherwise fall back to the primary.
+  const chosen = override ? sources.find((s) => s.id === override) : undefined;
+  const sourceId = chosen && (chosen.online || !sources.some((s) => s.online)) ? chosen.id : primaryId;
   const [status, setStatus] = useState<"connecting" | "live" | "offline">("connecting");
+  const [attempt, setAttempt] = useState(0);
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastBlob = useRef<Blob | null>(null);
   const onSourceChangeRef = useRef(onSourceChange);
   const onFrameRef = useRef(onFrame);
@@ -51,16 +54,34 @@ export function LiveFeed({
     if (!sourceId) return;
     const ws = new WebSocket(`${HUB_WS}/consume?source=${encodeURIComponent(sourceId)}`);
     ws.binaryType = "arraybuffer";
-    let url: string | null = null;
     let lastSize = "";
+    let decoding = false;
+    let alive = true;
+    let retry: ReturnType<typeof setTimeout> | undefined;
     ws.onopen = () => setStatus("connecting");
     ws.onmessage = (ev) => {
       const { header, jpeg } = decodeFrameMessage(ev.data as ArrayBuffer);
       lastBlob.current = jpeg;
-      const next = URL.createObjectURL(jpeg);
-      if (imgRef.current) imgRef.current.src = next;
-      if (url) URL.revokeObjectURL(url);
-      url = next;
+      // Decode straight onto a canvas (no per-frame object URLs); latest wins while a decode is in flight.
+      if (!decoding) {
+        decoding = true;
+        createImageBitmap(jpeg)
+          .then((bmp) => {
+            const canvas = canvasRef.current;
+            if (alive && canvas) {
+              if (canvas.width !== bmp.width || canvas.height !== bmp.height) {
+                canvas.width = bmp.width;
+                canvas.height = bmp.height;
+              }
+              canvas.getContext("2d")?.drawImage(bmp, 0, 0);
+            }
+            bmp.close();
+          })
+          .catch(() => {})
+          .finally(() => {
+            decoding = false;
+          });
+      }
       const w = Number(header.w);
       const h = Number(header.h);
       if (w && h && `${w}x${h}` !== lastSize) {
@@ -70,22 +91,27 @@ export function LiveFeed({
       onFrameRef.current?.({ w, h, seq: Number(header.seq) });
       setStatus("live");
     };
-    ws.onclose = () => setStatus("offline");
+    // The hub may restart under us: reconnect with a short backoff instead of staying offline.
+    ws.onclose = () => {
+      setStatus("offline");
+      if (alive) retry = setTimeout(() => setAttempt((n) => n + 1), Math.min(10_000, 1000 * 2 ** Math.min(attempt, 4)));
+    };
     ws.onerror = () => setStatus("offline");
     return () => {
+      alive = false;
+      if (retry) clearTimeout(retry);
       ws.close();
-      if (url) URL.revokeObjectURL(url);
     };
-  }, [sourceId]);
+  }, [sourceId, attempt]);
 
   const current = sources.find((s) => s.id === sourceId);
   const showFeed = !!sourceId && status === "live" && current?.online !== false;
+  const shownStatus = status === "live" && current?.online === false ? "offline" : status;
 
   return (
     <div className="panel overflow-hidden">
       <div className="relative bg-black" style={{ aspectRatio: aspect ?? (compact ? "4 / 3" : "16 / 10") }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={imgRef} alt="live feed" className="absolute inset-0 w-full h-full object-contain" style={{ opacity: showFeed ? 1 : 0.35 }} />
+        <canvas ref={canvasRef} role="img" aria-label="live feed" className="absolute inset-0 w-full h-full object-contain" style={{ opacity: showFeed ? 1 : 0.35 }} />
         {showFeed && overlay?.(frame)}
         {!showFeed && (
           <div className="absolute inset-0 grid place-items-center text-sm muted text-center px-6">
@@ -103,14 +129,14 @@ export function LiveFeed({
           </div>
         )}
         {compact && current && (
-          <span className={`absolute left-2 top-2 chip ${showFeed ? "ok" : "warn"}`} style={{ backdropFilter: "blur(6px)" }}>
+          <span className={`absolute left-2 bottom-2 chip ${showFeed ? "ok" : "warn"}`} style={{ backdropFilter: "blur(6px)" }}>
             {current.kind} · {showFeed ? `${current.fps.toFixed(0)} fps` : "offline"}
           </span>
         )}
       </div>
       {!compact && (
-        <div className="flex items-center gap-2 px-3 py-2 text-sm" style={{ borderTop: "1px solid var(--line)" }}>
-          <select className="btn sm" value={sourceId} onChange={(e) => setOverride(e.target.value)} aria-label="source">
+        <div className="flex items-center flex-wrap gap-2 px-3 py-2 text-sm" style={{ borderTop: "1px solid var(--line)" }}>
+          <select className="btn sm min-w-0 max-w-full truncate" value={sourceId} onChange={(e) => setOverride(e.target.value)} aria-label="source">
             {sources.length === 0 && <option value="">no sources</option>}
             {sources.map((s) => (
               <option key={s.id} value={s.id}>
@@ -119,9 +145,9 @@ export function LiveFeed({
               </option>
             ))}
           </select>
-          <span className={`chip ${status === "live" ? "ok" : "warn"}`}>{status}</span>
+          <span className={`chip ${shownStatus === "live" ? "ok" : "warn"}`}>{shownStatus}</span>
           {onSnapshot && (
-            <button className="btn primary sm ml-auto" disabled={status !== "live" || !!busy} onClick={() => lastBlob.current && onSnapshot(lastBlob.current, sourceId)}>
+            <button className="btn primary sm ml-auto" disabled={!showFeed || !!busy} onClick={() => lastBlob.current && onSnapshot(lastBlob.current, sourceId)}>
               Snap &amp; identify
             </button>
           )}
