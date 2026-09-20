@@ -1,0 +1,10 @@
+{
+  "items": [
+    { "partType": "lego:3022", "color": "green", "qty": 1 },
+    { "partType": "lego:3022", "color": "red", "qty": 1 },
+    { "partType": "lego:3022", "color": "blue", "qty": 1 }
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Green_Red_Blue_Lego_(49486875048).jpg",
+  "license": "CC BY-SA 2.0",
+  "note": "Three isolated 2x2 plates, one each in green, red, and blue."
+}

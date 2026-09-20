@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "partType": "lego:3001", "color": "red", "qty": 1 }
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Red_lego_brick.png",
+  "license": "CC0",
+  "note": "Horizontally flipped copy of the isolated source image; still one standard red 2x4 brick."
+}

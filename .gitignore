@@ -8,3 +8,4 @@ dist
 manuals.index.json
 .gstack/
 apps/web/public/manuals/
+eval/vision/results-*.json

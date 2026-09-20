@@ -8,11 +8,16 @@ Read **[PRD.md](PRD.md)** first. It is the spec; this file is the run sheet and 
 
 ```bash
 pnpm install
-cp apps/web/.env.example apps/web/.env.local   # add AI_GATEWAY_API_KEY or ANTHROPIC_API_KEY for vision
+cp apps/web/.env.example apps/web/.env.local   # add AI_GATEWAY_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or ANTHROPIC_API_KEY for vision
 pnpm dev            # web on :3000 + stream hub on :8787
 pnpm test           # parsers, matcher, nesting, hub protocol
 pnpm manuals:index  # parse manuals/ → apps/web/src/generated/manuals.index.json (also runs before dev/build/test)
 ```
+
+Vision can use the AI Gateway, Google Gemini, or Anthropic directly. Set
+`GOOGLE_GENERATIVE_AI_API_KEY` and leave `VISION_MODEL` unset to default to
+`google/gemini-3.6-flash`; use `VISION_MODEL=google/gemini-3.1-pro-preview` or an
+`anthropic/...` model to select a direct provider explicitly.
 
 - Web app: http://localhost:3000 — `/scan`, `/builds`, `/guide/<manualId>`, `/live`
 - Phone as camera: open `http://<laptop-lan-ip>:3000/source/phone` on a phone on the same Wi-Fi, set the hub to `ws://<laptop-lan-ip>:8787`, Start. (Camera needs a secure context: use `next dev --experimental-https` or a localhost tunnel.)
