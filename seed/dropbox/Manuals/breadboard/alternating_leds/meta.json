@@ -1,0 +1,5 @@
+{
+  "title": "Alternating LEDs",
+  "description": "Two LEDs take turns blinking from two digital outputs.",
+  "estMinutes": 8
+}

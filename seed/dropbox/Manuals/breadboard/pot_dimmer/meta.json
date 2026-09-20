@@ -1,0 +1,5 @@
+{
+  "title": "Potentiometer dimmer",
+  "description": "Turn a potentiometer to vary an LED's brightness.",
+  "estMinutes": 8
+}

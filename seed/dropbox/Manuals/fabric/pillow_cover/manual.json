@@ -1,0 +1,15 @@
+{
+  "pieces": [
+    { "id": "front", "polygonMm": [[0,0],[420,0],[420,420],[0,420]], "fabricClass": "fab:cotton_woven", "qty": 1 },
+    { "id": "back", "polygonMm": [[0,0],[420,0],[420,300],[0,300]], "fabricClass": "fab:cotton_woven", "qty": 2 }
+  ],
+  "notions": [{ "partType": "fab:thread", "qty": 1 }],
+  "steps": [
+    { "kind": "cut", "pieces": ["front", "back"], "text": "Cut one 420 mm square front and two 420 × 300 mm back panels." },
+    { "kind": "fold", "pieces": ["back"], "text": "Fold and press one long edge of each back panel twice." },
+    { "kind": "sew", "seam": { "a": ["back_1", "hem"], "b": ["back_1", "hem"] }, "text": "Topstitch both back hems." },
+    { "kind": "pin", "pieces": ["front", "back"], "text": "Layer the front face up, then place the back panels face down with the hems overlapping." },
+    { "kind": "sew", "seam": { "a": ["front", "all"], "b": ["back_1", "all"] }, "text": "Sew around all four edges, backstitching at the corners." },
+    { "kind": "turn", "text": "Turn the cover through the envelope opening and press the seams." }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "title": "Button buzzer",
+  "description": "Press a button to sound a piezo buzzer.",
+  "estMinutes": 7
+}

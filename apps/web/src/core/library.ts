@@ -61,7 +61,7 @@ export async function loadLibrary(root = manualsRoot()): Promise<{ manuals: Manu
         if (input.files["ingested.json"]) manuals.push(loadDocumentManual(input));
         else {
           const names = await fs.readdir(path.join(root, domain, id));
-          if (names.includes("source.pdf")) continue;
+          if (names.includes("source.pdf") || names.includes("pdf.url")) continue;
           manuals.push(getPlugin(domain).loadManual(input));
         }
       } catch (e) {

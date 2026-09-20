@@ -1,0 +1,5 @@
+{
+  "title": "Night light",
+  "description": "A photoresistor divider controls an LED as the room gets dark.",
+  "estMinutes": 9
+}

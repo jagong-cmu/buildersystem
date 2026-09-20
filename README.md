@@ -87,6 +87,7 @@ For LEGO, `0 !RC TITLE …` and `0 !RC TEXT …` meta lines before a `0 STEP` se
 - Vision verifier (`/api/verify`) is implemented and returns `unsure` with a plain hint when the hub or provider is unavailable; **Mark done** always works.
 - Dropbox Phase A build-record export, Phase B manual sync, Phase C PDF ingestion/document rendering, and Phase D persistent photo inventory with Dropbox photo scanning are complete. PDF ingestion uses `mupdf` and caps documents at 40 pages.
 - **Ray-Ban Meta photos → Dropbox:** export photos from the Meta AI app to the camera roll, enable Dropbox camera upload, then move them into `Apps/hackmitblah/Photos/<domain>/` for scanning. No glasses SDK integration is required.
+- Curated Dropbox seed content and its uploader are documented in [`seed/dropbox/README.md`](seed/dropbox/README.md).
 
 ### Replan
 

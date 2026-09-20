@@ -11,6 +11,7 @@
     "eval:vision": "tsx --env-file=.env.local scripts/eval-vision.ts",
     "eval:promptfoo": "promptfoo eval -c promptfooconfig.yaml --env-file .env.local --no-cache",
     "manuals:index": "tsx scripts/index-manuals.ts",
+    "dropbox:seed": "tsx --env-file=.env.local scripts/dropbox-seed.ts",
     "dropbox:auth": "tsx --env-file=.env.local scripts/dropbox-auth.ts",
     "predev": "pnpm manuals:index",
     "prebuild": "pnpm manuals:index",

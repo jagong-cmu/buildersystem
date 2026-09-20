@@ -1,0 +1,10 @@
+{
+  "title": "Circuits with MakeCode",
+  "description": "An openly licensed guide to LEDs, switches, and interactive prototypes.",
+  "estMinutes": 12,
+  "source": {
+    "url": "https://cdn.sparkfun.com/assets/resources/2/1/squishy_circuits_handout.pdf",
+    "license": "CC BY-SA 4.0",
+    "attribution": "SparkFun Electronics"
+  }
+}

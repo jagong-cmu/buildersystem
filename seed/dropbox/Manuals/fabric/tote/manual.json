@@ -1,0 +1,14 @@
+{
+  "pieces": [
+    { "id": "body", "polygonMm": [[0,0],[300,0],[300,360],[0,360]], "fabricClass": "fab:canvas", "qty": 2 },
+    { "id": "handle", "polygonMm": [[0,0],[60,0],[60,500],[0,500]], "fabricClass": "fab:canvas", "qty": 2 }
+  ],
+  "notions": [{ "partType": "fab:thread", "qty": 1 }],
+  "steps": [
+    { "kind": "cut", "pieces": ["body", "handle"], "text": "Cut two 300 × 360 mm body panels and two 60 × 500 mm handle strips." },
+    { "kind": "fold", "pieces": ["handle"], "text": "Fold each canvas handle strip lengthwise, press, and stitch the long edge." },
+    { "kind": "pin", "pieces": ["body"], "text": "Pin the body panels right sides together around the sides and bottom." },
+    { "kind": "sew", "seam": { "a": ["body_1", "sides+bottom"], "b": ["body_2", "sides+bottom"] }, "text": "Sew the side seams and bottom, then box both lower corners." },
+    { "kind": "attach", "notion": "fab:thread", "text": "Turn the bag, fold the top edge, and stitch the handles securely." }
+  ]
+}

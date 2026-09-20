@@ -1,0 +1,22 @@
+0 Park Bench
+0 Name: model.ldr
+0 !RC TITLE Left support
+0 !RC TEXT Stack a red 2x2 brick to make the left support.
+1 4 -50 -24 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Right support
+0 !RC TEXT Place a matching red 2x2 brick 6 studs away.
+1 4 50 -24 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Seat
+0 !RC TEXT Bridge the supports with a blue 2x8 plate.
+1 1 0 -40 0 1 0 0 0 1 0 0 0 1 3034.dat
+0 STEP
+0 !RC TITLE Seat edge
+0 !RC TEXT Add a blue 1x4 brick along the front edge.
+1 1 0 -64 -20 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Back rail
+0 !RC TEXT Add two yellow 1x2 bricks behind the seat.
+1 14 -30 -64 20 1 0 0 0 1 0 0 0 1 3004.dat
+1 14 30 -64 20 1 0 0 0 1 0 0 0 1 3004.dat
