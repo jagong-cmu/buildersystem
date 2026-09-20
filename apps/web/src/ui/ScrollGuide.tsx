@@ -32,6 +32,30 @@ const BADGE: Record<VerifyStatus, { cls: string; label: string }> = {
   unsure: { cls: "", label: "couldn't confirm" },
 };
 
+interface GuideProgress {
+  active: number;
+  verify: Record<number, VerifyResult>;
+}
+
+const PROGRESS_KEY = (manualId: string) => `rc:guide:${manualId}`;
+
+function readProgress(manualId: string): GuideProgress | null {
+  try {
+    const raw = sessionStorage.getItem(PROGRESS_KEY(manualId));
+    return raw ? (JSON.parse(raw) as GuideProgress) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeProgress(manualId: string, progress: GuideProgress) {
+  try {
+    sessionStorage.setItem(PROGRESS_KEY(manualId), JSON.stringify(progress));
+  } catch {
+    /* private mode etc. */
+  }
+}
+
 interface PlanBanner {
   fromStep: number;
   unresolved: Requirement[];
@@ -54,6 +78,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const match = useMemo(() => matchManual(inventory, manual, plugin.substitutions, MATCH_DEFAULTS[manual.domain], plugin), [inventory, manual, plugin]);
 
   const [active, setActive] = useState(0);
+  const progressLoaded = useRef(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   // PiP is on by default whenever a glasses source is online; the button overrides.
   const { glassesOnline, sourceId: primaryId } = usePrimarySource();
@@ -177,6 +202,22 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   useEffect(() => () => {
     if (bannerTimer.current) clearTimeout(bannerTimer.current);
   }, []);
+
+  // Progress survives a reload within the tab (PRD §16: no database).
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const saved = readProgress(initial.id);
+      if (saved) {
+        setActive(Math.max(0, Math.min(initial.steps.length, saved.active)));
+        setVerify(saved.verify ?? {});
+      }
+      progressLoaded.current = true;
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [initial]);
+  useEffect(() => {
+    if (progressLoaded.current) writeProgress(initial.id, { active, verify });
+  }, [initial.id, active, verify]);
 
   useEffect(() => {
     const n = Number(new URLSearchParams(window.location.search).get("step"));
