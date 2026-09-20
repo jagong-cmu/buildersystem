@@ -74,7 +74,7 @@ export function matchManual(
   let status: Match["status"] = missing.size > 0 ? "missing" : subs.length > 0 ? "with-subs" : "buildable";
 
   let feasibility: Match["feasibility"];
-  if (plugin?.feasibility) {
+  if (plugin?.feasibility && manual.render !== "document") {
     const f = plugin.feasibility(inventory, manual);
     feasibility = { ok: f.ok, detail: f.detail };
     if (!f.ok && status !== "missing") status = "missing";
