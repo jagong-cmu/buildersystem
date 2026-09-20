@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "partType": "bb:led_red", "qty": 1 }
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Electronic-Component-Red-LED.jpg",
+  "license": "Public domain",
+  "note": "One isolated 5 mm red LED."
+}

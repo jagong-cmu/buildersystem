@@ -1,0 +1,12 @@
+{
+  "items": [
+    { "partType": "bb:breadboard", "qty": 1 },
+    { "partType": "bb:led_green", "qty": 1 },
+    { "partType": "bb:led_yellow", "qty": 1 },
+    { "partType": "bb:led_red", "qty": 1 },
+    { "partType": "bb:pushbutton", "qty": 3 }
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Solderless_Breadboard_with_LEDs.jpg",
+  "license": "Copyrighted free use",
+  "note": "Assembled circuit with one breadboard, three colored LEDs, and three pushbuttons. The battery, resistor value, and individual wires are omitted because they are not confidently labelled by this vocabulary."
+}
