@@ -30,6 +30,17 @@ export const DIMS: Record<string, [number, number, number]> = {
   "37352": [2, 1, 24], "78666": [1, 2, 24], "49307": [1, 1, 16], "7134": [2, 1, 24], "3262": [2, 2, 24],
   // specials
   "59900": [1, 1, 24], "37762": [1, 1, 24], "37775": [1, 1, 24], "32607": [1, 1, 8], "25214": [1, 1, 24],
+  // --- 60486 Red Sports Car ---
+  "7035": [14, 4, 24], "6562": [1, 1, 16], "72206": [3, 3, 16], "15535": [2, 2, 8],
+  "35480": [2, 1, 8], "3021": [3, 2, 8], "5584": [4, 2, 8], "78329": [5, 1, 8], "6141": [1, 1, 8],
+  "4304": [2, 2, 16], "41740": [4, 1, 8], "7674": [2, 1, 24], "99780": [2, 1, 16], "44861": [2, 1, 8], "60478": [2, 1, 8],
+  "26601": [2, 2, 8], "79491": [2, 2, 8], "7797": [4, 6, 16],
+  "3070": [1, 1, 8], "6636": [6, 1, 8], "63864": [3, 1, 8], "5091": [2, 1, 8], "5092": [2, 1, 8], "35787": [2, 2, 8],
+  "115971": [2, 1, 8], "73893": [2, 1, 8], "99563": [2, 1, 8],
+  "28192": [2, 1, 24], "6231": [1, 1, 24], "73081": [1, 2, 24],
+  "11477": [2, 1, 16], "7302": [1, 3, 16], "93606": [2, 4, 16], "80177": [2, 3, 24], "80178": [2, 3, 24], "64225": [4, 3, 24],
+  "3387": [2, 4, 48], "5378": [4, 6, 32],
+  "73200": [2, 1, 32], "76382": [2, 1, 32], "105777": [1, 1, 20], "79688": [1, 1, 12],
 };
 export const DEFAULT_DIMS: [number, number, number] = [2, 2, 24];
 
@@ -48,7 +59,8 @@ export type ShapeKind =
   | "cone" // 1x1 nose cone
   | "rod" // thin candle stick
   | "flame" // candle flame
-  | "plant"; // round plate 1x1 with three leaves fanning towards +Z
+  | "plant" // round plate 1x1 with three leaves fanning towards +Z
+  | "arch"; // mudguard: full top, semicircular wheel arch cut out underneath, spanning Z
 
 export type StudLayout = "grid" | "center" | "none";
 
@@ -77,16 +89,31 @@ export const SHAPES: Record<string, PartShape> = {
   "49307": { kind: "halfCyl", studs: "none" }, "3262": { kind: "dome", studs: "none" },
   "59900": { kind: "cone", studs: "none" }, "37762": { kind: "rod", studs: "none" }, "25214": { kind: "rod", studs: "none" },
   "37775": { kind: "flame", studs: "none" }, "32607": { kind: "plant", studs: "center" },
+  // 60486 Red Sports Car
+  "6562": { kind: "rod", studs: "none" }, "72206": { kind: "cylinder", studs: "none" }, "15535": { kind: "cylinder", studs: "none" },
+  "6141": { kind: "cylinder", studs: "center" },
+  "4304": { kind: "box", studs: "grid", sideStuds: 2 }, "41740": { kind: "box", studs: "grid", sideStuds: 2 },
+  "7674": { kind: "box", studs: "grid", sideStuds: 2 }, "99780": { kind: "box", studs: "grid", sideStuds: 2 },
+  "79491": { kind: "quarter", studs: "grid" }, "7797": { kind: "halfTile", studs: "grid" },
+  "3070": { kind: "box", studs: "none" }, "6636": { kind: "box", studs: "none" }, "63864": { kind: "box", studs: "none" },
+  "5091": { kind: "box", studs: "none" }, "5092": { kind: "box", studs: "none" }, "35787": { kind: "box", studs: "none" },
+  "115971": { kind: "box", studs: "none" }, "73893": { kind: "box", studs: "none" }, "99563": { kind: "box", studs: "none" },
+  "28192": { kind: "slope", studs: "none" }, "73081": { kind: "box", studs: "none" },
+  "11477": { kind: "curved", studs: "none" }, "7302": { kind: "curved", studs: "none" }, "93606": { kind: "curved", studs: "none" },
+  "80177": { kind: "curved", studs: "none" }, "80178": { kind: "curved", studs: "none" }, "64225": { kind: "curved", studs: "none" },
+  "3387": { kind: "arch", studs: "grid" }, "5378": { kind: "slope", studs: "none" },
+  "73200": { kind: "box", studs: "none" }, "76382": { kind: "box", studs: "none" }, "105777": { kind: "cylinder", studs: "none" }, "79688": { kind: "dome", studs: "none" },
 };
 
 export const COLORS: Record<number, string> = {
   0: "#1b1b1b", 1: "#0055bf", 2: "#237841", 4: "#c91a09", 10: "#4b9f4a", 14: "#f2cd37", 15: "#f4f4f4", 19: "#e4cd9e", 25: "#fe8a18",
   26: "#c870a0", 27: "#bbe90b", 29: "#e4adc8", 47: "#d8ecff", 57: "#f8bb3d", 70: "#582a12", 71: "#a0a5a9", 72: "#6c6e68",
   320: "#720e0f", 321: "#078bc9", 322: "#36aebf", 353: "#ff6d77",
+  3: "#008f9b", 40: "#635f52", 43: "#aee9ef", 272: "#0a3463", 378: "#a0bcac", 484: "#a95500",
 };
 
 /** LDraw colors that render translucent. */
-export const TRANSLUCENT = new Set<number>([47, 57]);
+export const TRANSLUCENT = new Set<number>([47, 57, 40, 43]);
 
 export function dimsOf(part: string): [number, number, number] {
   return DIMS[part] ?? DEFAULT_DIMS;
