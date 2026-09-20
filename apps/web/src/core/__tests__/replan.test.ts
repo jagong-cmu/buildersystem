@@ -17,6 +17,15 @@ function inventory(domain: Inventory["domain"], items: [string, number, string?]
   };
 }
 
+function fullInventory(manual: ReturnType<typeof legoManual>, extra: [string, number][]): Inventory;
+function fullInventory(manual: ReturnType<typeof breadboardManual>, extra: [string, number][]): Inventory;
+function fullInventory(manual: ReturnType<typeof legoManual> | ReturnType<typeof breadboardManual>, extra: [string, number][]): Inventory {
+  const quantities = new Map<string, number>();
+  for (const requirement of manual.requires) quantities.set(requirement.partType, (quantities.get(requirement.partType) ?? 0) + requirement.qty);
+  for (const [partType, qty] of extra) quantities.set(partType, (quantities.get(partType) ?? 0) + qty);
+  return inventory(manual.domain, [...quantities].map(([partType, qty]) => [partType, qty]));
+}
+
 function legoManual() {
   return loadLegoManual({
     id: "phone_stand",
@@ -41,7 +50,7 @@ describe("replan", () => {
     const before = structuredClone(manual);
     const result = replan(
       manual,
-      inventory("lego", [["lego:3001", 3], ["lego:3003", 6]]),
+      fullInventory(manual, [["lego:3003", 4]]),
       1,
       [{ partType: "lego:3001", qty: 1 }],
       LEGO_SUBS,
@@ -69,7 +78,7 @@ describe("replan", () => {
     const manual = legoManual();
     const result = replan(
       manual,
-      inventory("lego", [["lego:3001", 3], ["lego:3003", 6]]),
+      fullInventory(manual, [["lego:3003", 4]]),
       1,
       [{ partType: "lego:3001", qty: 1 }],
       LEGO_SUBS,
@@ -82,17 +91,11 @@ describe("replan", () => {
 
   it("updates breadboard callouts without transforming placements", () => {
     const manual = breadboardManual();
+    const available = fullInventory(manual, [["bb:resistor_100", 2]]);
+    available.items = available.items.filter((item) => item.partType !== "bb:resistor_220");
     const result = replan(
       manual,
-      inventory("breadboard", [
-        ["bb:uno", 1],
-        ["bb:breadboard", 1],
-        ["bb:photoresistor", 1],
-        ["bb:resistor_10k", 1],
-        ["bb:led_red", 1],
-        ["bb:resistor_100", 2],
-        ["bb:jumper", 5],
-      ]),
+      available,
       2,
       [{ partType: "bb:resistor_220", qty: 1 }],
       BREADBOARD_SUBS,
@@ -114,7 +117,7 @@ describe("replan", () => {
     const manual = legoManual();
     const result = replan(
       manual,
-      inventory("lego", [["lego:3001", 3]]),
+      fullInventory(manual, []),
       1,
       [{ partType: "lego:3001", qty: 3 }],
       LEGO_SUBS,

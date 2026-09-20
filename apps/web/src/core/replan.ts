@@ -15,7 +15,7 @@ export function replan<P>(
   inventory: Inventory,
   completedThrough: number,
   missing: Requirement[],
-  rules: SubstitutionRule<NoInfer<P>>[],
+  rules: SubstitutionRule<P>[],
   opts: MatchOptions,
 ): ReplanResult<P> {
   const remaining = toMultiset(inventory.items, opts.colorAware);
@@ -96,13 +96,8 @@ export function replan<P>(
     ),
   };
 
-  const unresolved = matched.missing.filter((requirement) =>
-    missing.some((reported) => reqKey(reported, opts.colorAware) === reqKey(requirement, opts.colorAware)),
-  );
-  return { manual: nextManual, subs: [...emitted.values()], unresolved, fromStep };
+  return { manual: nextManual, subs: [...emitted.values()], unresolved: matched.missing, fromStep };
 }
-
-type NoInfer<T> = [T][T extends unknown ? 0 : never];
 
 function remove(multiset: Multiset, requirements: Requirement[], colorAware: boolean) {
   for (const requirement of requirements) {

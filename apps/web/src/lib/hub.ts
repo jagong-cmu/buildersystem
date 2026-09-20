@@ -51,9 +51,7 @@ export function subscribeControl(onMessage: (msg: Record<string, unknown>) => vo
     try {
       const msg = JSON.parse(event.data);
       if (msg && typeof msg === "object") onMessage(msg as Record<string, unknown>);
-    } catch {
-      // Ignore malformed hub messages.
-    }
+    } catch {}
   });
   socket.addEventListener("error", () => {});
   return () => socket.close();
