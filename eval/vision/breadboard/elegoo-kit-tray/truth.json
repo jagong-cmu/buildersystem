@@ -1,0 +1,13 @@
+{
+  "items": [
+    { "partType": "bb:uno", "qty": 1 },
+    { "partType": "bb:lcd1602", "qty": 1 },
+    { "partType": "bb:stepper_28byj48", "qty": 1 },
+    { "partType": "bb:potentiometer", "qty": 1 },
+    { "partType": "bb:servo_sg90", "qty": 1 },
+    { "partType": "bb:power_module", "qty": 1 }
+  ],
+  "source": "user photo, ELEGOO UNO R3 Super Starter Kit tray",
+  "license": "project",
+  "note": "Open kit tray: black ELEGOO UNO R3, LCD1602 on green PCB, 28BYJ-48 stepper with a 10k pot resting on it, SG90 servo in a bag, breadboard power module (bottom right). The taped resistor strip (yellow '220' label), the jumper bundle and the bagged small parts are omitted because they are not confidently countable."
+}

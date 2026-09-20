@@ -1,0 +1,148 @@
+{
+  "board": "uno",
+  "parts": [
+    {
+      "id": "btn",
+      "partType": "bb:pushbutton",
+      "pins": [
+        {
+          "row": "e",
+          "col": 10
+        },
+        {
+          "row": "e",
+          "col": 12
+        },
+        {
+          "row": "f",
+          "col": 10
+        },
+        {
+          "row": "f",
+          "col": 12
+        }
+      ]
+    },
+    {
+      "id": "buzzer",
+      "partType": "bb:buzzer_passive",
+      "pins": [
+        {
+          "row": "e",
+          "col": 18
+        },
+        {
+          "row": "e",
+          "col": 20
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "id": "w_gnd",
+      "from": {
+        "board": "GND"
+      },
+      "to": {
+        "row": "gnd",
+        "col": 1
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_btn",
+      "from": {
+        "board": "D2"
+      },
+      "to": {
+        "row": "a",
+        "col": 10
+      },
+      "color": "green"
+    },
+    {
+      "id": "w_btn_gnd",
+      "from": {
+        "row": "a",
+        "col": 12
+      },
+      "to": {
+        "row": "gnd",
+        "col": 12
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_buz",
+      "from": {
+        "board": "D8"
+      },
+      "to": {
+        "row": "a",
+        "col": 18
+      },
+      "color": "yellow"
+    },
+    {
+      "id": "w_buz_gnd",
+      "from": {
+        "row": "a",
+        "col": 20
+      },
+      "to": {
+        "row": "gnd",
+        "col": 20
+      },
+      "color": "black"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ground rail",
+      "add": [
+        "w_gnd"
+      ],
+      "text": "Connect the UNO's GND pin to the breadboard's blue ground rail with a black jumper."
+    },
+    {
+      "title": "Button",
+      "add": [
+        "btn",
+        "w_btn",
+        "w_btn_gnd"
+      ],
+      "text": "Straddle the pushbutton across the centre channel at columns 10 and 12. Wire D2 to a10 and a12 to the ground rail.",
+      "probes": [
+        {
+          "pin": "D2",
+          "mode": "digitalRead",
+          "expect": {
+            "value": 1
+          },
+          "note": "Idle HIGH with pull-up; LOW when pressed"
+        }
+      ]
+    },
+    {
+      "title": "Passive buzzer",
+      "add": [
+        "buzzer",
+        "w_buz",
+        "w_buz_gnd"
+      ],
+      "text": "Seat the passive buzzer (green PCB underneath) in e18 and e20. Wire D8 to a18 and a20 to the ground rail.",
+      "probes": [
+        {
+          "pin": "D8",
+          "mode": "pulse",
+          "expect": {
+            "value": 1
+          },
+          "note": "Press the button: melody plays"
+        }
+      ]
+    }
+  ],
+  "sketch": "melody_button.ino"
+}

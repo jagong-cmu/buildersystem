@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { RendererProps } from "@/core/plugin";
 import type { BoardPlacement, PartInstance } from "@/core/types";
-import { BOARD_PINS, BOARD_PITCH, BOARD_X0, BOARD_Y, COL0, COLS, H, PITCH, ROW_Y, W, WIRE_COLORS, endXY, holeXY, wirePath } from "./layout";
+import { BOARD_PINS, BOARD_PITCH, BOARD_X0, BOARD_Y, COL0, COLS, H, PITCH, ROW_Y, W, WIRE_COLORS, endXY, holeXY, moduleBox, moduleLabel, wirePath } from "./layout";
+import { partOhms } from "./vocabulary";
 
 type Phase = "hidden" | "ghost" | "current";
 
@@ -36,7 +37,8 @@ function Part({ inst, phase }: { inst: PartInstance<BoardPlacement>; phase: Phas
   const [x1, y1] = pts[0];
   const [x2, y2] = pts[1] ?? pts[0];
   const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
-  const ohms = Number(inst.partType.match(/resistor_(\d+)(k?)/)?.[1] ?? 0) * (inst.partType.endsWith("k") ? 1000 : 1);
+  const ohms = partOhms(inst.partType);
+  const box = moduleBox(inst.partType, pts);
   return (
     <g className={`part${phase === "current" ? " pop" : ""}`} opacity={op} filter={glow}>
       {pts.map(([x, y], i) => (
@@ -53,7 +55,15 @@ function Part({ inst, phase }: { inst: PartInstance<BoardPlacement>; phase: Phas
           </g>
         </g>
       )}
-      {inst.partType.startsWith("bb:led") && (
+      {inst.partType === "bb:led_rgb" && (
+        <g>
+          {pts.map(([x, y], i) => (
+            <line key={i} x1={x} y1={y} x2={x} y2={y - 14 - (i === 1 ? 6 : 0)} stroke="#999" strokeWidth={3} />
+          ))}
+          <circle cx={cx} cy={y1 - 30} r={14} fill="url(#rgb)" stroke="#fff5" />
+        </g>
+      )}
+      {inst.partType.startsWith("bb:led") && inst.partType !== "bb:led_rgb" && (
         <g>
           <line x1={x1} y1={y1} x2={x1} y2={y1 - 18} stroke="#999" strokeWidth={3} />
           <line x1={x2} y1={y2} x2={x2} y2={y2 - 14} stroke="#999" strokeWidth={3} />
@@ -75,7 +85,31 @@ function Part({ inst, phase }: { inst: PartInstance<BoardPlacement>; phase: Phas
           <circle cx={pts.reduce((s, p) => s + p[0], 0) / pts.length} cy={pts.reduce((s, p) => s + p[1], 0) / pts.length} r={9} fill="#111" stroke="#888" />
         </g>
       )}
-      {(inst.partType === "bb:potentiometer" || inst.partType === "bb:buzzer") && <circle cx={cx} cy={cy - 24} r={14} fill="#333" stroke="#888" />}
+      {inst.partType === "bb:potentiometer" && (
+        <g>
+          <rect x={cx - 16} y={cy - 40} width={32} height={26} rx={4} fill="#2f5fb3" stroke="#9bb" />
+          <circle cx={cx} cy={cy - 27} r={8} fill="#111" stroke="#888" />
+        </g>
+      )}
+      {inst.partType.startsWith("bb:buzzer") && (
+        <g>
+          <circle cx={cx} cy={cy - 24} r={14} fill="#222" stroke="#888" />
+          <circle cx={cx} cy={cy - 24} r={3} fill="#666" />
+        </g>
+      )}
+      {(inst.partType === "bb:thermistor" || inst.partType === "bb:tilt_switch") && (
+        <g>
+          <line x1={x1} y1={y1} x2={cx - 4} y2={cy - 18} stroke="#999" strokeWidth={3} />
+          <line x1={x2} y1={y2} x2={cx + 4} y2={cy - 18} stroke="#999" strokeWidth={3} />
+          <rect x={cx - 7} y={cy - 40} width={14} height={22} rx={inst.partType === "bb:thermistor" ? 7 : 4} fill="#111" stroke="#777" />
+        </g>
+      )}
+      {box && (
+        <g>
+          <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={5} fill={box.fill} stroke="#9ab" />
+          <text x={box.x + box.w / 2} y={box.y + box.h / 2 + 4} fontSize={10} fill="#eef" textAnchor="middle" className="mono">{moduleLabel(inst.partType)}</text>
+        </g>
+      )}
     </g>
   );
 }
@@ -111,6 +145,11 @@ export function BreadboardRenderer({ manual, step, registerSnapshot }: RendererP
         <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#ffb020" floodOpacity="0.9" />
         </filter>
+        <linearGradient id="rgb" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#e5383b" />
+          <stop offset=".5" stopColor="#2ec27e" />
+          <stop offset="1" stopColor="#3b82f6" />
+        </linearGradient>
         <style>{`
           .wire-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .6s ease-out forwards; }
           @keyframes draw { to { stroke-dashoffset: 0; } }

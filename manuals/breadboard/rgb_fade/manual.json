@@ -1,0 +1,205 @@
+{
+  "board": "uno",
+  "parts": [
+    {
+      "id": "rgb",
+      "partType": "bb:led_rgb",
+      "pins": [
+        {
+          "row": "e",
+          "col": 10
+        },
+        {
+          "row": "e",
+          "col": 11
+        },
+        {
+          "row": "e",
+          "col": 12
+        },
+        {
+          "row": "e",
+          "col": 13
+        }
+      ],
+      "polarity": [
+        "red",
+        "cathode",
+        "green",
+        "blue"
+      ]
+    },
+    {
+      "id": "r_red",
+      "partType": "bb:resistor_220",
+      "pins": [
+        {
+          "row": "d",
+          "col": 10
+        },
+        {
+          "row": "d",
+          "col": 6
+        }
+      ]
+    },
+    {
+      "id": "r_green",
+      "partType": "bb:resistor_220",
+      "pins": [
+        {
+          "row": "d",
+          "col": 12
+        },
+        {
+          "row": "d",
+          "col": 16
+        }
+      ]
+    },
+    {
+      "id": "r_blue",
+      "partType": "bb:resistor_220",
+      "pins": [
+        {
+          "row": "d",
+          "col": 13
+        },
+        {
+          "row": "d",
+          "col": 19
+        }
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "id": "w_gnd",
+      "from": {
+        "board": "GND"
+      },
+      "to": {
+        "row": "gnd",
+        "col": 1
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_cat",
+      "from": {
+        "row": "a",
+        "col": 11
+      },
+      "to": {
+        "row": "gnd",
+        "col": 11
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_red",
+      "from": {
+        "board": "D9"
+      },
+      "to": {
+        "row": "a",
+        "col": 6
+      },
+      "color": "red"
+    },
+    {
+      "id": "w_green",
+      "from": {
+        "board": "D10"
+      },
+      "to": {
+        "row": "a",
+        "col": 16
+      },
+      "color": "green"
+    },
+    {
+      "id": "w_blue",
+      "from": {
+        "board": "D11"
+      },
+      "to": {
+        "row": "a",
+        "col": 19
+      },
+      "color": "blue"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ground rail",
+      "add": [
+        "w_gnd"
+      ],
+      "text": "Connect the UNO's GND pin to the breadboard's blue ground rail with a black jumper."
+    },
+    {
+      "title": "RGB LED",
+      "add": [
+        "rgb",
+        "w_cat"
+      ],
+      "text": "Seat the 4-leg RGB LED in e10–e13 with its longest leg (common cathode) in e11. Wire a11 to the ground rail."
+    },
+    {
+      "title": "Red channel",
+      "add": [
+        "r_red",
+        "w_red"
+      ],
+      "text": "220Ω from d10 to d6, then wire D9 to a6.",
+      "probes": [
+        {
+          "pin": "D9",
+          "mode": "pulse",
+          "expect": {
+            "value": 1
+          },
+          "note": "LED glows red"
+        }
+      ]
+    },
+    {
+      "title": "Green channel",
+      "add": [
+        "r_green",
+        "w_green"
+      ],
+      "text": "220Ω from d12 to d16, then wire D10 to a16.",
+      "probes": [
+        {
+          "pin": "D10",
+          "mode": "pulse",
+          "expect": {
+            "value": 1
+          },
+          "note": "LED glows green"
+        }
+      ]
+    },
+    {
+      "title": "Blue channel",
+      "add": [
+        "r_blue",
+        "w_blue"
+      ],
+      "text": "220Ω from d13 to d19, then wire D11 to a19. The sketch fades through all colours.",
+      "probes": [
+        {
+          "pin": "D11",
+          "mode": "pulse",
+          "expect": {
+            "value": 1
+          },
+          "note": "LED glows blue"
+        }
+      ]
+    }
+  ],
+  "sketch": "rgb_fade.ino"
+}

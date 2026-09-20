@@ -1,0 +1,1 @@
+{"title": "Thermistor Thermometer", "description": "Read temperature from the NTC thermistor and a 10k divider; pinch it to watch A0 move.", "estMinutes": 6}

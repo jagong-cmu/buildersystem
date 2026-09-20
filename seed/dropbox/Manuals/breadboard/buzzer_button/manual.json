@@ -2,7 +2,7 @@
   "board": "uno",
   "parts": [
     { "id": "button", "partType": "bb:pushbutton", "pins": [{ "row": "e", "col": 6 }, { "row": "e", "col": 8 }, { "row": "f", "col": 6 }, { "row": "f", "col": 8 }] },
-    { "id": "buzzer", "partType": "bb:buzzer", "pins": [{ "row": "e", "col": 18 }, { "row": "e", "col": 20 }] }
+    { "id": "buzzer", "partType": "bb:buzzer_active", "pins": [{ "row": "e", "col": 18 }, { "row": "e", "col": 20 }] }
   ],
   "wires": [
     { "id": "gnd", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },

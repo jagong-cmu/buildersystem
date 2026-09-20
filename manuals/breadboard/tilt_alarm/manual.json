@@ -1,0 +1,144 @@
+{
+  "board": "uno",
+  "parts": [
+    {
+      "id": "tilt",
+      "partType": "bb:tilt_switch",
+      "pins": [
+        {
+          "row": "e",
+          "col": 10
+        },
+        {
+          "row": "e",
+          "col": 12
+        }
+      ]
+    },
+    {
+      "id": "buzzer",
+      "partType": "bb:buzzer_active",
+      "pins": [
+        {
+          "row": "e",
+          "col": 18
+        },
+        {
+          "row": "e",
+          "col": 20
+        }
+      ],
+      "polarity": [
+        "+",
+        "-"
+      ]
+    }
+  ],
+  "wires": [
+    {
+      "id": "w_gnd",
+      "from": {
+        "board": "GND"
+      },
+      "to": {
+        "row": "gnd",
+        "col": 1
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_tilt",
+      "from": {
+        "board": "D2"
+      },
+      "to": {
+        "row": "a",
+        "col": 10
+      },
+      "color": "green"
+    },
+    {
+      "id": "w_tilt_gnd",
+      "from": {
+        "row": "a",
+        "col": 12
+      },
+      "to": {
+        "row": "gnd",
+        "col": 12
+      },
+      "color": "black"
+    },
+    {
+      "id": "w_buz",
+      "from": {
+        "board": "D8"
+      },
+      "to": {
+        "row": "a",
+        "col": 18
+      },
+      "color": "yellow"
+    },
+    {
+      "id": "w_buz_gnd",
+      "from": {
+        "row": "a",
+        "col": 20
+      },
+      "to": {
+        "row": "gnd",
+        "col": 20
+      },
+      "color": "black"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ground rail",
+      "add": [
+        "w_gnd"
+      ],
+      "text": "Connect the UNO's GND pin to the breadboard's blue ground rail with a black jumper."
+    },
+    {
+      "title": "Tilt switch",
+      "add": [
+        "tilt",
+        "w_tilt",
+        "w_tilt_gnd"
+      ],
+      "text": "Stand the black tilt switch in e10 and e12. Wire D2 to a10 and a12 to the ground rail; the sketch uses INPUT_PULLUP.",
+      "probes": [
+        {
+          "pin": "D2",
+          "mode": "digitalRead",
+          "expect": {
+            "value": 0
+          },
+          "note": "Upright: ball closes the switch, reads LOW"
+        }
+      ]
+    },
+    {
+      "title": "Buzzer",
+      "add": [
+        "buzzer",
+        "w_buz",
+        "w_buz_gnd"
+      ],
+      "text": "Seat the active buzzer with its + leg (longer, marked on top) in e18 and the other leg in e20. Wire D8 to a18 and a20 to the ground rail.",
+      "probes": [
+        {
+          "pin": "D8",
+          "mode": "pulse",
+          "expect": {
+            "value": 1
+          },
+          "note": "Tilt the board: buzzer beeps"
+        }
+      ]
+    }
+  ],
+  "sketch": "tilt_alarm.ino"
+}
