@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchManual } from "@/core/matcher";
 import { replan } from "@/core/replan";
-import type { Manual, Requirement, VerifyResult, VerifyStatus } from "@/core/types";
+import type { BoardPlacement, Manual, Requirement, Step, VerifyResult, VerifyStatus } from "@/core/types";
+import { hardwareVerifier } from "@/domains/breadboard/verifiers";
 import { MATCH_DEFAULTS, PLUGINS } from "@/domains";
 import { RENDERERS } from "@/domains/renderers";
 import { DOMAIN_LABEL, reqLabel } from "@/lib/format";
-import { sendControl, subscribeControl } from "@/lib/hub";
+import { HUB_HTTP, sendControl, subscribeControl } from "@/lib/hub";
 import { useInventory } from "@/lib/inventory-store";
 import { LiveFeed } from "./LiveFeed";
 
@@ -172,6 +173,13 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "checking" } }));
     sendControl({ type: "check", step });
     try {
+      if (manual.steps[step - 1]?.expected.probes?.length) {
+        const hardware = await hardwareVerifier.verify(manual.id, manual.steps[step - 1] as Step<BoardPlacement>, { hubHttp: HUB_HTTP });
+        if (hardware.status !== "unsure") {
+          setVerify((v) => ({ ...v, [step]: hardware }));
+          return;
+        }
+      }
       const fd = new FormData();
       fd.append("manualId", manual.id);
       fd.append("step", String(step));
