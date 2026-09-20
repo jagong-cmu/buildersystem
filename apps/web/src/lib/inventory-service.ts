@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { SANITIZE_BY_DOMAIN, inventoryPrompt, inventorySchema, itemsFromOutput, makeInventory, sanitizeItems, type Box, type SanitizeOptions } from "@/core/inventory";
 import { VISION_MOCK, imageHash, visionModel, visionObject } from "@/lib/vision";
 import { BRICKOGNIZE_ENABLED, cropBox, identifyPart, mapLimit, normalizeBrickColor, toVocabPart } from "@/lib/brickognize";
+import { PART_CLASSIFIER_ENABLED, candidatesFor, classifyCrop, resolvePart } from "@/lib/part-classifier";
 import { exemplarParts, type VisionPart } from "@/core/feedback";
 import { loadExemplars } from "@/lib/feedback";
 
@@ -39,6 +40,7 @@ export async function detectInventory(
   const [prepared, exemplars] = await Promise.all([Promise.all(images.map(prepareImage)), loadExemplars(domain).catch(() => [])]);
   const prefix = exemplarParts(exemplars);
   if (domain === "lego" && BRICKOGNIZE_ENABLED) return makeInventory(domain, await detectLegoItems(plugin, prepared, prefix, text), sourceId);
+  if (domain === "breadboard" && PART_CLASSIFIER_ENABLED && visionModel()) return makeInventory(domain, await detectBreadboardItems(plugin, prepared, prefix, text), sourceId);
   const out = await visionObject({
     schema: inventorySchema(plugin),
     system: inventoryPrompt(plugin),
@@ -105,6 +107,46 @@ async function identifyWholeFrame(img: InventoryImage, vocabIds: ReadonlySet<str
   if (!hit || hit.score < MIN_PART_SCORE || !res.box) return [];
   const color = res.colors[0] && res.colors[0].score >= MIN_COLOR_SCORE ? normalizeBrickColor(res.colors[0].name) : undefined;
   return [{ partType: toVocabPart(hit.id, vocabIds)!, qty: 1, ...(color ? { color } : {}), conf: hit.score, bbox: res.box, boxes: [res.box] }];
+}
+
+/** CLIP softmax over ~50 labels: a clear crop of a known part typically scores 0.4–0.9. */
+const MIN_CLASSIFIER_SCORE = 0.25;
+
+/**
+ * Breadboard: the vision model localizes and labels instances; each crop is re-classified by a
+ * zero-shot image model against the vocabulary. The classifier's pick wins when it is confident and
+ * disagrees with the vision label; the row keeps the vision label when the classifier is unreachable.
+ */
+async function detectBreadboardItems(plugin: DomainPlugin, images: InventoryImage[], prefix: VisionPart[], text?: string): Promise<InventoryItem[]> {
+  const out = await visionObject({
+    schema: inventorySchema(plugin),
+    system: inventoryPrompt(plugin),
+    prefix,
+    text: text ?? "Identify the parts on the table.",
+    images,
+    fast: true,
+  });
+  const located = itemsFromOutput(out, SANITIZE_BY_DOMAIN.breadboard);
+  if (images.length !== 1) return located;
+  const candidates = candidatesFor(plugin.vocabulary);
+  const withoutBoxes = located.filter((it) => !it.boxes?.length);
+  const instances = located.flatMap((it) => (it.boxes ?? []).map((box) => ({ it, box })));
+  const rows = await mapLimit(instances, async ({ it, box }): Promise<InventoryItem> => {
+    const fallback: InventoryItem = { partType: it.partType, qty: 1, ...(it.color ? { color: it.color } : {}), conf: it.conf, bbox: box, boxes: [box] };
+    try {
+      const crop = await cropBox(images[0].data, box);
+      if (!crop) return fallback;
+      const [top] = await classifyCrop(crop, candidates);
+      if (!top || top.score < MIN_CLASSIFIER_SCORE) return fallback;
+      const partType = resolvePart(top.id, it.partType, plugin.vocabulary);
+      const conf = partType === it.partType ? Math.max(it.conf, top.score) : top.score;
+      return { ...fallback, partType, conf };
+    } catch (e) {
+      console.warn("part classifier failed, keeping vision label:", (e as Error).message);
+      return fallback;
+    }
+  });
+  return [...regroup(rows), ...withoutBoxes];
 }
 
 /** Merge single-instance rows into one row per part type + colour (qty = instances, conf = mean). */
