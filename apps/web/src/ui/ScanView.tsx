@@ -16,8 +16,9 @@ import { LiveFeed } from "./LiveFeed";
 import { ScanControls } from "./ScanControls";
 import { ScrapMeasure } from "./ScrapMeasure";
 import { useLiveInventory } from "./useLiveInventory";
+import { DropboxPhotos } from "./DropboxPhotos";
 
-export function ScanView({ extraParts = [] }: { extraParts?: PartType[] }) {
+export function ScanView({ extraParts = [], dropbox = false }: { extraParts?: PartType[]; dropbox?: boolean }) {
   const [domain] = useDomain();
   const [inventory, setInventory] = useInventory(domain);
   const [sourceId, setSourceId] = useState("");
@@ -94,6 +95,7 @@ export function ScanView({ extraParts = [] }: { extraParts?: PartType[] }) {
             </label>
           </div>
         </details>
+        {dropbox && <DropboxPhotos domain={domain} inventory={inventory} onUse={edit} onError={setError} />}
         <div className="flex items-center gap-3 min-h-6">
           {busy && <span className="muted text-sm">{busy}</span>}
           {error && <span className="chip warn">{error}</span>}
