@@ -20,17 +20,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="h-full flex flex-col">
-        <header className="flex items-center gap-4 px-5 py-3 border-b" style={{ borderColor: "var(--line)" }}>
+        <header className="flex items-center flex-wrap gap-x-4 gap-y-2 px-5 py-3 border-b" style={{ borderColor: "var(--line)" }}>
           <Link href="/" className="font-semibold tracking-tight">
             Reality Compiler
           </Link>
-          <nav className="flex gap-3 text-sm muted">
+          <nav className="flex flex-wrap gap-3 text-sm muted">
             <Link href="/scan">Scan</Link>
             <Link href="/builds">Builds</Link>
             {dropboxEnabled() && <Link href="/library">Library</Link>}
             <Link href="/live">Live</Link>
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center flex-wrap gap-2">
             <GlassesChip />
             <DomainSwitch />
             <AutoVerifyToggle />

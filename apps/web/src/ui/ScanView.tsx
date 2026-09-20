@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import type { Inventory } from "@/core/types";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { useDetections, recordDetections } from "@/lib/detections";
-import { coverageHint } from "@/lib/live-inventory";
+import { coverageHint, mergeWithPins } from "@/lib/live-inventory";
 import { DOMAIN_LABEL, partLabel } from "@/lib/format";
 import { postInventory } from "@/lib/inventory-client";
 import { usePrimarySource } from "@/lib/sources";
@@ -26,7 +26,7 @@ export function ScanView() {
   const [lastFrame, setLastFrame] = useState<Blob | null>(null);
   const { source, glassesOnline } = usePrimarySource();
   const detections = useDetections();
-  const live = useLiveInventory({ domain, enabled: true });
+  const live = useLiveInventory({ domain, enabled: true, sourceId });
   const { status } = live;
 
   async function recognize(blob: Blob, sourceId: string) {
@@ -44,9 +44,9 @@ export function ScanView() {
     }
   }
 
-  /** Explicit scan/snap/upload results also feed the overlay. */
+  /** Explicit scan/snap/upload results also feed the overlay; pinned hand edits stay. */
   function applyResult(inv: Inventory) {
-    setInventory(inv);
+    setInventory({ ...inv, items: mergeWithPins(inv.items, inventory.items, status.pinned) });
     recordDetections(inv.items, inv.frameSeqs?.at(-1) ?? -1, inv.sourceId);
   }
 

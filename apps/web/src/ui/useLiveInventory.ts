@@ -38,6 +38,8 @@ export interface LiveInventoryOptions {
   enabled: boolean;
   /** Write the aggregated window to the inventory store (off on the guide: detections only). */
   writeInventory?: boolean;
+  /** Consume this hub source instead of the primary one (the feed's dropdown override). */
+  sourceId?: string;
   intervalMs?: number;
   maxPerMinute?: number;
   windowSize?: number;
@@ -53,7 +55,10 @@ function readPins(domain: DomainId): Set<string> {
 
 export function useLiveInventory(opts: LiveInventoryOptions) {
   const { domain, enabled, writeInventory: write = true, intervalMs = 1000, maxPerMinute = DEFAULT_CALLS_PER_MINUTE, windowSize = 8 } = opts;
-  const { sourceId, source } = usePrimarySource();
+  const primary = usePrimarySource();
+  const override = opts.sourceId && primary.sources.find((s) => s.id === opts.sourceId);
+  const source = override || primary.source;
+  const sourceId = source?.id ?? "";
   const online = !!source?.online;
   const [frozen, setFrozen] = useState(false);
   const [pinned, setPinned] = useState<Set<string>>(() => new Set());
