@@ -21,7 +21,7 @@ export function InventoryEditor({ domain, inventory, onChange }: { domain: Domai
   }, [domain, plugin]);
 
   const qtyOf = (partType: string, color?: string) =>
-    inventory.items.find((it) => it.partType === partType && (it.color ?? "") === (color ?? ""))?.qty ?? 0;
+    inventory.items.filter((it) => it.partType === partType && (it.color ?? "") === (color ?? "")).reduce((s, it) => s + it.qty, 0);
 
   const nonZero = rows.filter((r) => qtyOf(r.partType, r.color) > 0);
   const zero = rows.filter((r) => qtyOf(r.partType, r.color) === 0);
