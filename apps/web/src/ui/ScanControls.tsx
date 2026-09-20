@@ -1,6 +1,7 @@
 // Video scan and burst controls.
 "use client";
 
+import { useState } from "react";
 import type { DomainId, Inventory } from "@/core/types";
 import { inventoryBusy, postInventory } from "@/lib/inventory-client";
 import { snapBurst } from "@/lib/frames";
@@ -21,6 +22,7 @@ export function ScanControls({
   onBusy: (msg: string | null) => void;
 }) {
   const { progress, start, stop } = useVideoScan(domain, onResult, onError);
+  const [snapping, setSnapping] = useState(false);
 
   useControlBus((msg) => {
     if (msg.type === "scan.start") start(msg.source ?? sourceId, msg.seconds);
@@ -29,6 +31,7 @@ export function ScanControls({
 
   const snap = async () => {
     if (inventoryBusy()) return;
+    setSnapping(true);
     onBusy("Identifying 3 frames…");
     try {
       const blobs = await snapBurst(sourceId);
@@ -38,6 +41,7 @@ export function ScanControls({
       onError((e as Error).message);
     } finally {
       onBusy(null);
+      setSnapping(false);
     }
   };
 
@@ -57,7 +61,7 @@ export function ScanControls({
           </span>
         </>
       )}
-      <button className="btn sm" disabled={!sourceId || progress.active || inventoryBusy()} onClick={snap}>
+      <button className="btn sm" disabled={!sourceId || progress.active || snapping} onClick={snap}>
         Snap 3
       </button>
     </div>
