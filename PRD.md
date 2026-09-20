@@ -150,11 +150,13 @@ Principles:
 - Supported today: Ray-Ban Meta, Oakley Meta HSTN.
 - **There is no glasses → laptop path.** A phone app must receive the stream and forward it.
 
-### 7.2 Glasses bridge app (`apps/glasses-bridge-ios` or `-android`)
-Minimal native app built from Meta's sample app:
-- Screen: hub URL field, **Connect glasses**, **Start/Stop stream**, fps + latency, buttons **Scan** / **Check** / **Next** / **Prev**.
-- On each frame from the DAT stream: downscale to ≤ 720p (640p acceptable), JPEG q≈0.6, send over WebSocket to hub `/produce?source=glasses` at **≤ 10 fps** (throttle; the hub does not need 30).
-- Control buttons send `{type:'scan.start'|'check'|'next'|'prev'}` on `/control`.
+### 7.2 Glasses bridge app (`apps/glasses-bridge-ios`) — built, see `docs/glasses-bridge.md`
+SwiftUI app whose DAT layer is ported from the team's Brownmellon app (`jagong-cmu/hackmit`), which already streams from real glasses:
+- Screen: hub URL + source id (persisted), **Connect glasses** (Meta AI registration handoff via the `glassesbridge://` scheme), **Start/Stop stream**, glasses→phone fps, phone→hub fps / latency / sent / dropped, buttons **Scan** / **Check** / **Next** / **Prev** / **Missing** (current step's callouts from `step.activated`, tap → `part.missing`).
+- SDK facts (0.9.0) that differ from the earlier assumptions above: `StreamConfiguration(videoCodec:resolution:frameRate:)` only accepts **2/7/15/24/30 fps** and `low` 360×640 / `medium` 504×896 / `high` 720×1280 (portrait). Frames arrive as `VideoFrame` (`CMSampleBuffer`, `makeUIImage()`) on the SDK's queue; there is no callback-rate control below 15 fps other than 2/7, so the bridge requests `medium @ 15` and throttles to **≤ 10 fps** itself. A `DeviceSession` must reach `.started` before `addCamera`; the camera permission is granted inside the Meta AI app (`requestPermission(.camera)`), not by iOS.
+- On each admitted frame: downscale to ≤ 960 px wide (medium already fits), JPEG q≈0.6, send over WebSocket to `/produce?source=glasses&kind=glasses` in the exact §8 binary format; drop (never queue) when a send is in flight or the socket is down; reconnect with 0.5 s→8 s backoff.
+- Control buttons POST `{type:'scan.start'|'check'|'next'|'prev'|'part.missing'}` to `/control`; the guide reacts to `next`/`prev`/`check` (its own `check` echoes carry `origin:'guide'` and are ignored).
+- Mock Device Kit (`MWDATMockDevice`, Simulator only) pairs a mock Ray-Ban Meta fed by the Mac camera or a bundled video, so the whole path runs without hardware.
 - **Narration back to the glasses (cheap, high impact):** the hub broadcasts `{type:'say', text}` when a step activates or a verification completes; the phone speaks it with platform TTS. The glasses are the phone's Bluetooth audio output, so the wearer hears it in the glasses' open-ear speakers.
 - Stretch: on-phone speech recognition of "scan / check / next" → control messages.
 
@@ -179,7 +181,7 @@ Header: `{ v:1, sourceId, seq, ts (ms epoch), w, h, mime:'image/jpeg' }`.
 
 **Consumer:** `ws://<hub>/consume?source=<id>` — receives the same messages (latest-wins; the hub drops frames if a consumer lags).
 
-**Control bus:** `ws://<hub>/control` — JSON messages, broadcast to all: `scan.start | scan.stop | check | next | prev | say | inventory.updated | step.activated | verify.result`.
+**Control bus:** `ws://<hub>/control` — JSON messages, broadcast to all: `scan.start | scan.stop | check | next | prev | say | part.missing | inventory.updated | step.activated | verify.result | motion | source.status`. `step.activated` additionally carries `total` and `callouts` (the step's requirements) so the bridge can build its Missing list; `check` may carry `origin` so the guide ignores its own echo.
 
 **HTTP:**
 - `GET /frames/latest?source=` → JPEG

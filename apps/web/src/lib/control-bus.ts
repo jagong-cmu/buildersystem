@@ -7,12 +7,13 @@ import { HUB_WS } from "@/lib/hub";
 export type ControlMessage =
   | { type: "scan.start"; source?: string; seconds?: number }
   | { type: "scan.stop" }
-  | { type: "check"; step?: number }
+  | { type: "check"; step?: number; origin?: string }
   | { type: "next" }
   | { type: "prev" }
   | { type: "say"; text: string }
+  | { type: "part.missing"; partType: string; color?: string; qty?: number }
   | { type: "inventory.updated"; domain: string; count: number }
-  | { type: "step.activated"; manualId: string; step: number; text: string }
+  | { type: "step.activated"; manualId: string; step: number; text: string; total?: number; callouts?: { partType: string; qty: number; color?: string }[] }
   | { type: "verify.result"; manualId: string; step: number; status: string; hint?: string }
   | { type: "motion"; source: string; state: "active" | "settled"; score: number }
   | { type: "source.status"; source: string; kind: string; online: boolean; fps: number };
