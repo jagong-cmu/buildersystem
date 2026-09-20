@@ -67,7 +67,7 @@ For LEGO, `0 !RC TITLE …` and `0 !RC TEXT …` meta lines before a `0 STEP` se
 - [ ] **M4b** glasses bridge app (`apps/glasses-bridge-*`) speaking the hub protocol; TTS of `say` messages
 - [ ] **M5** demo assets (real manuals for the chosen LEGO set, reference photos for vision, marker mat), rehearsal, recorded fallback
 - Vision verifier (`/api/verify`) is implemented and returns `unsure` with a plain hint when the hub or provider is unavailable; **Mark done** always works.
-- Dropbox Phase A build-record export and `/library` connection are complete; Phases B–D are planned.
+- Dropbox Phase A build-record export and Phase B manual sync with `/library` listings are complete; Phases C–D are planned.
 
 ### Replan
 
