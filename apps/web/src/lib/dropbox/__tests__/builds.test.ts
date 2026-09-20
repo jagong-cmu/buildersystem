@@ -50,12 +50,10 @@ describe("Dropbox build records", () => {
 
   it("uploads result last, retries failures, and falls back for existing links", async () => {
     const calls: string[] = [];
-    let failedOnce = true;
     const dbx = {
       filesUpload: async ({ path }: { path: string }) => {
         calls.push(path);
-        if (path.endsWith("manual.json") && failedOnce) {
-          failedOnce = false;
+        if (path.endsWith("manual.json")) {
           throw Object.assign(new Error("temporary"), { status: 500 });
         }
       },
@@ -69,8 +67,8 @@ describe("Dropbox build records", () => {
       { name: "manual.json", contents: "{}" },
       { name: "result.json", contents: "{}" },
     ]);
-    expect(calls.map((call) => call.split("/").pop())).toEqual(["README.md", "manual.json", "manual.json", "result.json"]);
-    expect(result.failed).toEqual([]);
+    expect(calls.map((call) => call.split("/").pop())).toEqual(["README.md", "manual.json", "manual.json", "manual.json", "manual.json", "result.json"]);
+    expect(result.failed).toEqual(["manual.json"]);
     expect(result.url).toBe("https://dropbox.example/build");
   });
 });
