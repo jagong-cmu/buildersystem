@@ -2,7 +2,7 @@ import { getPlugin } from "@/domains";
 import type { DomainPlugin } from "@/core/plugin";
 import type { DomainId, Inventory, InventoryItem } from "@/core/types";
 import sharp from "sharp";
-import { inventoryPrompt, inventorySchema, makeInventory, sanitizeItems } from "@/core/inventory";
+import { SANITIZE_BY_DOMAIN, inventoryPrompt, inventorySchema, itemsFromOutput, makeInventory } from "@/core/inventory";
 import { VISION_MOCK, imageHash, visionObject } from "@/lib/vision";
 
 /** Long edge sent to the vision model; larger frames only add upload time and latency. */
@@ -40,7 +40,7 @@ export async function detectInventory(
     images: await Promise.all(images.map(prepareImage)),
     fast: true,
   });
-  return makeInventory(domain, sanitizeItems(out.items), sourceId);
+  return makeInventory(domain, itemsFromOutput(out, SANITIZE_BY_DOMAIN[domain]), sourceId);
 }
 
 function mockItems(plugin: DomainPlugin, seed: number): InventoryItem[] {

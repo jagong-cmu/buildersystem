@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateFrames, fromBox2d, mergeFrames, sanitizeItems, sumFrames } from "../inventory";
+import { aggregateFrames, fromBox2d, itemsFromOutput, mergeFrames, sanitizeItems, sumFrames } from "../inventory";
 import type { InventoryItem } from "../types";
 
 const item = (partType: string, qty: number, conf: number, color?: string, bbox?: [number, number, number, number]): InventoryItem => ({
@@ -85,5 +85,32 @@ describe("sanitizeItems", () => {
     const [out] = sanitizeItems([item("A", 1, 0.9, "red", [0, 0, 1, 1])]);
     expect(out.bbox).toBeUndefined();
     expect(out.qty).toBe(1);
+  });
+  it("with requireBoxes, drops rows without a box and clamps qty to the boxes kept", () => {
+    const out = sanitizeItems(
+      [item("A", 1, 0.9, "red"), { ...item("B", 3, 0.9), boxes: [[0.1, 0.1, 0.05, 0.05], [0, 0, 0.9, 0.9], [0.5, 0.5, 0.05, 0.05]] }],
+      { requireBoxes: true },
+    );
+    expect(out.map((it) => [it.partType, it.qty])).toEqual([["B", 2]]);
+  });
+});
+
+describe("itemsFromOutput", () => {
+  const good = { partType: "A", evidence: "red 2x4 brick, 8 studs", qty: 1, conf: 0.9, boxes: [[0.1, 0.1, 0.05, 0.05] as [number, number, number, number]] };
+  it("returns nothing when the scene has no loose parts", () => {
+    expect(itemsFromOutput({ scene: "no-parts", sceneNote: "a laptop", items: [good] })).toEqual([]);
+    expect(itemsFromOutput({ scene: "assembly-only", sceneNote: "a built model", items: [good] })).toEqual([]);
+  });
+  it("strips evidence and sanitises loose-parts scenes", () => {
+    const [out] = itemsFromOutput({ scene: "loose-parts", sceneNote: "bricks on a desk", items: [good, { ...good, partType: "B", conf: 0.5 }] }, { requireBoxes: true });
+    expect(out.partType).toBe("A");
+    expect("evidence" in out).toBe(false);
+  });
+});
+
+describe("aggregateFrames minFrames", () => {
+  it("drops rows seen in only one frame", () => {
+    const out = aggregateFrames([[item("A", 1, 0.9), item("B", 1, 0.9)], [item("A", 2, 0.8)]], 2);
+    expect(out.map((it) => it.partType)).toEqual(["A"]);
   });
 });

@@ -5,7 +5,7 @@ import { PLUGINS } from "@/domains";
 import { withQty } from "@/lib/inventory-store";
 import { LDRAW_COLORS } from "@/domains/lego/vocabulary";
 
-const LEGO_COLORS = ["red", "blue", "yellow", "white", "black", "green", "light gray"];
+const LEGO_COLORS = ["red", "blue", "yellow", "white", "black", "green", "bright green", "lime", "coral", "reddish brown", "medium azure", "tan", "trans clear", "trans orange", "light gray"];
 
 /**
  * Editable inventory (PRD §5.2): the demo must never be blocked by a misdetection.
@@ -15,10 +15,18 @@ export function InventoryEditor({ domain, inventory, onChange, extraParts = [] }
   const plugin = PLUGINS[domain];
   const rows = useMemo(() => {
     if (domain === "lego") {
-      return [...plugin.vocabulary.flatMap((p) => LEGO_COLORS.map((c) => ({ partType: p.id, name: p.name, color: c }))), ...extraParts.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined }))];
+      const colors = [...LEGO_COLORS];
+      for (const it of inventory.items) if (it.color && !colors.includes(it.color)) colors.push(it.color);
+      return [...plugin.vocabulary.flatMap((p) => colors.map((c) => ({ partType: p.id, name: p.name, color: c }))), ...extraParts.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined }))];
     }
     return [...plugin.vocabulary.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined })), ...extraParts.map((p) => ({ partType: p.id, name: p.name, color: undefined as string | undefined }))];
-  }, [domain, plugin, extraParts]);
+  }, [domain, plugin, extraParts, inventory.items]);
+
+  const confOf = (partType: string, color?: string) => {
+    const rows = inventory.items.filter((it) => it.partType === partType && (it.color ?? "") === (color ?? ""));
+    if (!rows.length) return undefined;
+    return Math.min(...rows.map((it) => it.conf));
+  };
 
   const qtyOf = (partType: string, color?: string) =>
     inventory.items.filter((it) => it.partType === partType && (it.color ?? "") === (color ?? "")).reduce((s, it) => s + it.qty, 0);
@@ -28,6 +36,7 @@ export function InventoryEditor({ domain, inventory, onChange, extraParts = [] }
 
   const Row = ({ r }: { r: (typeof rows)[number] }) => {
     const q = qtyOf(r.partType, r.color);
+    const conf = q > 0 ? confOf(r.partType, r.color) : undefined;
     return (
       <li className="flex items-center gap-2 py-1">
         {r.color && <span className="inline-block w-3 h-3 rounded-sm border" style={{ background: cssColor(r.color), borderColor: "var(--line)" }} />}
@@ -35,6 +44,11 @@ export function InventoryEditor({ domain, inventory, onChange, extraParts = [] }
           {r.name}
           {r.color ? <span className="muted"> · {r.color}</span> : null}
         </span>
+        {conf !== undefined && conf < 1 && (
+          <span className="mono text-xs muted" title="model confidence 0..1">
+            {conf.toFixed(2)}
+          </span>
+        )}
         <button className="btn sm" onClick={() => onChange(withQty(inventory, r.partType, Math.max(0, q - 1), r.color))}>
           −
         </button>
@@ -87,6 +101,13 @@ export function cssColor(name: string): string {
     "dark gray": "#6c6e68",
     tan: "#e4cd9e",
     orange: "#fe8a18",
+    "bright green": "#4b9f4a",
+    lime: "#bbe90b",
+    coral: "#ff698f",
+    "reddish brown": "#582a12",
+    "medium azure": "#36aebf",
+    "trans clear": "#e0f0f7",
+    "trans orange": "#f8bb3d",
   };
   if (map[name]) return map[name];
   const code = Number(Object.entries(LDRAW_COLORS).find(([, v]) => v === name)?.[0]);

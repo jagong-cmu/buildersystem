@@ -15,13 +15,17 @@ export function fromBox2d([ymin, xmin, ymax, xmax]: number[]): Box {
 
 const box2d = z.array(z.number()).length(4).transform(fromBox2d);
 
+export const SCENE_KINDS = ["loose-parts", "assembly-only", "no-parts"] as const;
+export type SceneKind = (typeof SCENE_KINDS)[number];
+
 export function inventorySchema(plugin: DomainPlugin) {
   const ids = plugin.vocabulary.map((p) => p.id) as [string, ...string[]];
   const item = z.object({
     partType: z.enum(ids),
+    evidence: z.string().max(120).describe("What in the image identifies it: shape, stud count, height, color. Under 12 words."),
     qty: z.number().int().min(1).max(200),
     color: z.string().optional().describe("Dominant color name, lowercase, only when meaningful (LEGO)."),
-    conf: z.number().min(0).max(1),
+    conf: z.number().min(0).max(1).describe("0..1 probability that this row (type, color and count) is right. 0.9+ only when studs/edges are crisply visible; 0.5 means a guess."),
     bbox: box2d.optional().describe("Box of one representative instance as [ymin, xmin, ymax, xmax], integers 0..1000 relative to the image."),
     boxes: z
       .array(box2d)
@@ -33,8 +37,14 @@ export function inventorySchema(plugin: DomainPlugin) {
       .describe("Fabric only: outline of the scrap in millimetres, using the marker mat for scale."),
     attrs: z.record(z.string(), z.union([z.number(), z.string()])).optional().describe("e.g. { lengthMm: 180 } for a zipper"),
   });
-  return z.object({ items: z.array(item) });
+  return z.object({
+    scene: z.enum(SCENE_KINDS).describe("Decide this first. loose-parts: individual parts lie on a surface. assembly-only: only a built model, no loose parts. no-parts: people, screens, rooms, hands, or anything without parts."),
+    sceneNote: z.string().max(120).describe("One short sentence describing what the image shows."),
+    items: z.array(item).describe("Empty unless scene is loose-parts."),
+  });
 }
+
+export type InventoryOutput = z.infer<ReturnType<typeof inventorySchema>>;
 
 export function inventoryPrompt(plugin: DomainPlugin): string {
   const vocab = plugin.vocabulary.map((p) => `- ${p.id}: ${p.name} — ${p.visionHint}`).join("\n");
@@ -58,7 +68,10 @@ export function inventoryPrompt(plugin: DomainPlugin): string {
     ].join("\n"),
   };
   return [
-    `You are the inventory scanner for a ${plugin.id} build assistant. Identify every part visible on the table.`,
+    `You are the inventory scanner for a ${plugin.id} build assistant. Identify every loose part visible on the table.`,
+    "First decide what the image is. Most frames from a wearable camera show people, laptops, screens, food, or a room: for those set scene to no-parts and return no items at all. Only when individual parts lie on a surface within reach set scene to loose-parts. Do not describe a screen, photo, print or reflection as parts.",
+    "For every item, write `evidence` before `conf`: what you actually see (e.g. 'red 2x4 brick, 8 studs, tall side'). If you cannot write concrete evidence for a part, do not report it. A frame with no parts must produce an empty list, never a plausible-sounding guess.",
+    "Calibrate conf: 0.9+ studs and edges clearly visible and count certain; 0.7 type certain but color or count slightly uncertain; 0.5 or less is a guess and should usually be left out.",
     "Only use part types from this vocabulary (ids are exact):",
     vocab,
     domainNotes[plugin.id],
@@ -71,8 +84,9 @@ export function inventoryPrompt(plugin: DomainPlugin): string {
 /**
  * Aggregate per-frame detections from a scan window: per part type/color take the
  * MAX quantity seen in any single frame (never the sum: the same brick is in every frame).
+ * Rows seen in fewer than `minFrames` frames are dropped (one-frame hallucinations).
  */
-export function aggregateFrames(frames: InventoryItem[][]): InventoryItem[] {
+export function aggregateFrames(frames: InventoryItem[][], minFrames = 1): InventoryItem[] {
   const best = new Map<string, InventoryItem & { n: number; confSum: number }>();
   for (const items of frames)
     for (const it of items) {
@@ -93,7 +107,7 @@ export function aggregateFrames(frames: InventoryItem[][]): InventoryItem[] {
         else cur.attrs = it.attrs;
       }
     }
-  return [...best.values()].map(({ n, confSum, ...it }) => ({ ...it, conf: confSum / n }));
+  return [...best.values()].filter((it) => it.n >= minFrames).map(({ n, confSum, ...it }) => ({ ...it, conf: confSum / n }));
 }
 
 export function sumFrames(frames: InventoryItem[][]): InventoryItem[] {
@@ -124,7 +138,13 @@ export function mergeFrames(frames: InventoryItem[][], mode: "same-pile" | "diff
   return mode === "different-bins" ? sumFrames(frames) : aggregateFrames(frames);
 }
 
-const MIN_CONF = 0.4;
+export const MIN_CONF = 0.6;
+/** LEGO frames are the ones that hallucinate (studs look like keyboards); other domains ask for low-conf rows on purpose. */
+export const SANITIZE_BY_DOMAIN: Record<DomainId, SanitizeOptions> = {
+  lego: { minConf: MIN_CONF, requireBoxes: true },
+  breadboard: { minConf: 0.3 },
+  fabric: { minConf: 0.3 },
+};
 const MIN_SIDE = 0.01;
 const MAX_AREA = 0.3;
 
@@ -132,26 +152,46 @@ function plausible(b: Box): boolean {
   return b[2] >= MIN_SIDE && b[3] >= MIN_SIDE && b[2] * b[3] <= MAX_AREA;
 }
 
+export interface SanitizeOptions {
+  minConf?: number;
+  /** Every counted instance must have a plausible box (live camera frames); qty is clamped to the boxes kept. */
+  requireBoxes?: boolean;
+}
+
 /**
  * Drop low-confidence rows and boxes that cannot be a single part (degenerate or
  * covering a large part of the frame), and keep `boxes` consistent with `qty`.
  */
-export function sanitizeItems(items: InventoryItem[]): InventoryItem[] {
+export function sanitizeItems(items: InventoryItem[], opts: SanitizeOptions = {}): InventoryItem[] {
+  const minConf = opts.minConf ?? MIN_CONF;
   const out: InventoryItem[] = [];
   for (const it of items) {
-    if (it.conf < MIN_CONF) continue;
+    if (it.conf < minConf) continue;
     const boxes = (it.boxes?.length ? it.boxes : it.bbox ? [it.bbox] : []).filter(plausible).slice(0, it.qty);
     const next: InventoryItem = { ...it };
     if (boxes.length) {
       next.boxes = boxes;
       next.bbox = boxes[0];
+      if (opts.requireBoxes) next.qty = boxes.length;
     } else {
+      if (opts.requireBoxes) continue;
       delete next.boxes;
       delete next.bbox;
     }
     out.push(next);
   }
   return out;
+}
+
+/** Apply the scene gate and per-item sanitising to a raw model response. */
+export function itemsFromOutput(out: InventoryOutput, opts: SanitizeOptions = {}): InventoryItem[] {
+  if (out.scene !== "loose-parts") return [];
+  const items: InventoryItem[] = out.items.map((it) => {
+    const { evidence, ...rest } = it;
+    void evidence;
+    return rest;
+  });
+  return sanitizeItems(items, opts);
 }
 
 export function makeInventory(domain: DomainId, items: InventoryItem[], sourceId: string, frameSeqs: number[] = []): Inventory {
