@@ -1,0 +1,32 @@
+# Vision inventory eval matrix: prompt variants x models over eval/vision cases.
+# Run from apps/web:  pnpm eval:promptfoo            (then `pnpm exec promptfoo view` for the UI)
+# Filter:             EVAL_DOMAIN=lego EVAL_CASE=mixed-pile pnpm eval:promptfoo
+# Models:             pass extra providers with `-p`, or edit the list below.
+description: Inventory vision eval (eval/vision)
+
+prompts:
+  - file://scripts/promptfoo/prompts.ts:baseline
+  - file://scripts/promptfoo/prompts.ts:colorsAndPlates
+  - file://scripts/promptfoo/prompts.ts:countCarefully
+
+providers:
+  - id: file://scripts/promptfoo/provider.ts
+    label: gemini-3.6-flash
+    config:
+      model: google/gemini-3.6-flash
+  - id: file://scripts/promptfoo/provider.ts
+    label: gemini-3.1-pro-preview
+    config:
+      model: google/gemini-3.1-pro-preview
+
+tests: file://scripts/promptfoo/cases.ts
+
+defaultTest:
+  assert:
+    - type: javascript
+      value: file://scripts/promptfoo/assert.ts
+
+evaluateOptions:
+  maxConcurrency: 2
+
+outputPath: ../../eval/vision/results-promptfoo.json

@@ -11,8 +11,8 @@ const defaultVisionModel = () =>
 
 export const VISION_MODEL = process.env.VISION_MODEL ?? defaultVisionModel();
 
-export function visionModel() {
-  const modelId = process.env.VISION_MODEL ?? defaultVisionModel();
+export function visionModel(override?: string) {
+  const modelId = override ?? process.env.VISION_MODEL ?? defaultVisionModel();
   if (process.env.AI_GATEWAY_API_KEY) return modelId;
 
   const [configuredProvider, configuredName] = modelId.includes("/") ? modelId.split("/", 2) : [];
@@ -34,8 +34,9 @@ export async function visionObject<S extends z.ZodTypeAny>(opts: {
   system: string;
   text: string;
   images: { data: Uint8Array; mediaType: string }[];
+  model?: string;
 }): Promise<z.infer<S>> {
-  const model = visionModel();
+  const model = visionModel(opts.model);
   if (!model) throw new Error("No vision provider configured: set AI_GATEWAY_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or ANTHROPIC_API_KEY in apps/web/.env.local");
   const { output } = await generateText({
     model,

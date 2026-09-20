@@ -14,9 +14,9 @@ import path from "node:path";
 import { getPlugin } from "../src/domains";
 import type { DomainId } from "../src/core/types";
 import { inventoryPrompt, inventorySchema } from "../src/core/inventory";
+import { scoreInventory, type TruthItem } from "../src/core/inventory-score";
 import { VISION_MODEL, visionObject } from "../src/lib/vision";
 
-type TruthItem = { partType: string; color?: string; qty: number };
 type Truth = { items: TruthItem[]; note?: string };
 type Pred = { partType: string; color?: string; qty: number; conf: number };
 
@@ -29,38 +29,6 @@ const flag = (name: string) => {
 const onlyDomain = flag("domain") as DomainId | undefined;
 const onlyCase = flag("case");
 if (flag("model")) process.env.VISION_MODEL = flag("model");
-
-const keyOf = (it: { partType: string; color?: string }, useColor: boolean) =>
-  useColor && it.color ? `${it.partType}:${it.color.toLowerCase().trim()}` : it.partType;
-
-function score(truth: TruthItem[], pred: Pred[], domain: DomainId) {
-  const useColor = domain === "lego";
-  const t = new Map<string, number>();
-  for (const it of truth) t.set(keyOf(it, useColor), (t.get(keyOf(it, useColor)) ?? 0) + it.qty);
-  const p = new Map<string, number>();
-  for (const it of pred) p.set(keyOf(it, useColor), (p.get(keyOf(it, useColor)) ?? 0) + it.qty);
-  const tp = [...t.keys()].filter((k) => p.has(k)).length;
-  const precision = p.size ? tp / p.size : 0;
-  const recall = t.size ? tp / t.size : 0;
-  const f1 = precision + recall ? (2 * precision * recall) / (precision + recall) : 0;
-  let exact = 0;
-  let absErr = 0;
-  for (const [k, q] of t) {
-    const pq = p.get(k);
-    if (pq === undefined) continue;
-    if (pq === q) exact++;
-    absErr += Math.abs(pq - q);
-  }
-  return {
-    precision,
-    recall,
-    f1,
-    qtyExact: t.size ? exact / t.size : 0,
-    qtyMae: tp ? absErr / tp : null,
-    missing: [...t.keys()].filter((k) => !p.has(k)),
-    extra: [...p.keys()].filter((k) => !t.has(k)),
-  };
-}
 
 async function main() {
   const domains = (await readdir(ROOT)).filter((d) => ["lego", "breadboard", "fabric"].includes(d)) as DomainId[];
@@ -104,7 +72,7 @@ async function main() {
           await new Promise((r) => setTimeout(r, waitMs));
         }
       }
-      const s = score(truth.items, pred, domain);
+      const s = scoreInventory(truth.items, pred, domain);
       results.push({ domain, case: c, images: files.length, ms: Date.now() - t0, error, ...s, pred, truth: truth.items });
       const pct = (x: number) => `${Math.round(x * 100)}%`;
       console.log(
