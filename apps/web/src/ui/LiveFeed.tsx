@@ -94,7 +94,7 @@ export function LiveFeed({
     // The hub may restart under us: reconnect with a short backoff instead of staying offline.
     ws.onclose = () => {
       setStatus("offline");
-      if (alive) retry = setTimeout(() => setAttempt((n) => n + 1), Math.min(10_000, 1000 * 2 ** Math.min(attempt, 3)));
+      if (alive) retry = setTimeout(() => setAttempt((n) => n + 1), Math.min(10_000, 1000 * 2 ** Math.min(attempt, 4)));
     };
     ws.onerror = () => setStatus("offline");
     return () => {

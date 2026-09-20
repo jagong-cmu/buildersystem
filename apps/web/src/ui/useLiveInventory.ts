@@ -75,9 +75,17 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
     pinnedRef.current = pinned;
   }, [pinned]);
 
+  // Pins are shared across tabs through localStorage, like the inventory itself.
   useEffect(() => {
     const timer = setTimeout(() => setPinned(readPins(domain)), 0);
-    return () => clearTimeout(timer);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === PINS_KEY(domain)) setPinned(readPins(domain));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("storage", onStorage);
+    };
   }, [domain]);
 
   // The frame window and overlay belong to one domain's vocabulary.

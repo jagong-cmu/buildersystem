@@ -18,7 +18,7 @@ body { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif
 .mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
-.chip { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .55rem; border-radius: 999px; font-size: .75rem; border: 1px solid var(--line); background: var(--panel-2); }
+.chip { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .55rem; border-radius: 999px; font-size: .75rem; border: 1px solid var(--line); background: var(--panel-2); max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
 .chip.ok { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
 .chip.warn { border-color: color-mix(in srgb, var(--warn) 50%, transparent); color: var(--warn); }
 .chip.info { border-color: color-mix(in srgb, var(--info) 50%, transparent); color: var(--info); }
