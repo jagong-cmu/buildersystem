@@ -11,17 +11,20 @@ domains:
   from the existing breadboard vocabulary.
 - `Manuals/fabric/` contains four projects using the existing fabric classes
   and notions: a tote, pillow cover, bookmark, and pot holder.
-- Each domain also has two PDF-only document-ingestion fixtures. Their PDFs
-  are downloaded at seed time from the URLs in `pdf.url`; they are not checked
-  into Git.
+- Breadboard has two PDF-only document-ingestion fixtures. Fabric has one
+  genuinely on-domain public-domain sewing booklet. LEGO intentionally has no
+  PDF fixtures: LEGO instruction PDFs are copyrighted, so this seed does not
+  pad the LEGO folder with unrelated documents. PDFs are downloaded at seed
+  time from the URLs in `pdf.url`; they are not checked into Git.
 - `Photos/<domain>/` lists a small set of existing evaluation images in
   `photos.json`. The uploader copies those files to Dropbox without adding
   duplicate binaries to the repository.
 
-The PDF fixtures use short openly licensed maker guides. SparkFun's LilyPad
-and Squishy Circuits handouts are CC BY-SA; the Hexayurt instructions are
-published as open-source/copyright-free construction instructions. The source
-URL, license, and attribution are repeated in each `meta.json`.
+The breadboard PDF fixtures are SparkFun's LilyPad and Squishy Circuits
+handouts, both CC BY-SA. The fabric fixture is the 22-page public-domain
+*Community sewing in relief programs* booklet from the United States Bureau of
+Home Economics. The source URL, license, and attribution are repeated in each
+`meta.json`.
 
 From the repository root, with Dropbox credentials in `apps/web/.env.local`:
 
