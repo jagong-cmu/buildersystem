@@ -84,16 +84,25 @@ async function main() {
       const t0 = Date.now();
       let pred: Pred[] = [];
       let error: string | undefined;
-      try {
-        const out = await visionObject({
-          schema: inventorySchema(plugin),
-          system: inventoryPrompt(plugin),
-          text: images.length > 1 ? `These ${images.length} photos show the same table from different angles. Report each part once.` : "Identify the parts on the table.",
-          images,
-        });
-        pred = out.items;
-      } catch (e) {
-        error = (e as Error).message;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          const out = await visionObject({
+            schema: inventorySchema(plugin),
+            system: inventoryPrompt(plugin),
+            text: images.length > 1 ? `These ${images.length} photos show the same table from different angles. Report each part once.` : "Identify the parts on the table.",
+            images,
+          });
+          pred = out.items;
+          error = undefined;
+          break;
+        } catch (e) {
+          error = (e as Error).message;
+          const m = /retry in ([\d.]+)s/i.exec(error);
+          if (!/quota|429|rate/i.test(error)) break;
+          const waitMs = m ? Math.ceil(Number(m[1]) * 1000) + 1000 : 30_000 * (attempt + 1);
+          console.log(`   rate limited, waiting ${Math.round(waitMs / 1000)}s`);
+          await new Promise((r) => setTimeout(r, waitMs));
+        }
       }
       const s = score(truth.items, pred, domain);
       results.push({ domain, case: c, images: files.length, ms: Date.now() - t0, error, ...s, pred, truth: truth.items });
