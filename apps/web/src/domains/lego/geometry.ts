@@ -85,6 +85,10 @@ function profile(kind: ShapeKind, sz: number, h: number): [number, number][] {
       return [[z0, 0], ...arc(z0, y1 - 4, z1 - z0, -Math.PI / 2, 0).slice(1), [z1, y1], [z0, y1]];
     case "curvedInv": // inverted half arch: full top, arch scooped out under the +Z half
       return [[z0, 0], [z1, 0], [z1, 4], ...arc(z1, y1, z1, Math.PI, Math.PI * 1.5).reverse().slice(1), [z0, y1]];
+    case "arch": {
+      const r = (z1 - z0) / 2 - 4;
+      return [[z0, 0], [z1, 0], [z1, y1], [r, y1], ...arc(0, y1, r, 0, -Math.PI).slice(1, -1), [-r, y1], [z0, y1]];
+    }
     case "halfCyl": {
       const r = (z1 - z0) / 2;
       return [...arc(0, y1 - r, r, Math.PI, Math.PI * 2), [z1, y1], [z0, y1]];
