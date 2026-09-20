@@ -355,7 +355,7 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
             <LiveFeed
               compact
               overlay={(frame) => (
-                <FrameOverlay domain={manual.domain} detections={detections.items} frame={frame ?? detections.frame} highlight={highlight} dimOthers />
+                <FrameOverlay domain={manual.domain} detections={detections.items} frame={frame ?? detections.frame} highlight={highlight} dimOthers labels="highlight" />
               )}
             />
             {activeStep && activeStep.callouts.length > 0 && (
@@ -365,8 +365,8 @@ export function ScrollGuide({ initial }: { initial: Manual }) {
                   <div key={i} className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 rounded-full" style={{ background: where ? "var(--accent)" : "var(--line)" }} />
                     <span className={where ? "" : "muted"}>
-                      {where ? `${qty} × ` : ""}
                       {reqLabel(manual.domain, req)} — {where ?? "not in view"}
+                      {where && qty != null && qty < req.qty ? ` (${qty} seen)` : ""}
                     </span>
                   </div>
                 ))}

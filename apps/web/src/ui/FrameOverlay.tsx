@@ -13,6 +13,7 @@ export function FrameOverlay({
   frame,
   highlight,
   dimOthers,
+  labels = "all",
 }: {
   domain: DomainId;
   detections: Detection[];
@@ -22,6 +23,8 @@ export function FrameOverlay({
   highlight?: Set<string>;
   /** When highlighting, draw non-highlighted boxes faintly. */
   dimOthers?: boolean;
+  /** Small overlays (PiP): only label the highlighted boxes. */
+  labels?: "all" | "highlight";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -47,6 +50,7 @@ export function FrameOverlay({
             const r = bboxToRect(d.bbox!, image);
             const hot = highlight?.has(keyOf(d)) || (highlight && d.color && highlight.has(`${d.partType}|`));
             const faded = dimOthers && highlight && !hot;
+            const showLabel = labels !== "highlight" || hot;
             const color = hot ? "var(--accent)" : "var(--info)";
             return (
               <div
@@ -63,13 +67,13 @@ export function FrameOverlay({
                   transition: "left .35s ease, top .35s ease, width .35s ease, height .35s ease, opacity .3s ease",
                 }}
               >
-                <span
+                {showLabel && <span
                   className="absolute left-0 -top-5 whitespace-nowrap px-1.5 py-0.5 rounded text-[11px] font-medium"
                   style={{ background: color, color: "#111", maxWidth: "min(16rem, 60vw)", overflow: "hidden", textOverflow: "ellipsis" }}
                 >
                   {d.qty} × {d.color ? `${d.color} ` : ""}
                   {partLabel(domain, d.partType)}
-                </span>
+                </span>}
               </div>
             );
           })}

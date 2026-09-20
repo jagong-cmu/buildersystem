@@ -89,7 +89,7 @@ export function LiveFeed({
         {showFeed && overlay?.(frame)}
         {!showFeed && (
           <div className="absolute inset-0 grid place-items-center text-sm muted text-center px-6">
-            {status === "offline" || !hubOnline ? (
+            {status === "offline" || !hubOnline || current?.online === false || !sourceId ? (
               <div>
                 {hubOnline ? OFFLINE_GUIDANCE : (
                   <>
