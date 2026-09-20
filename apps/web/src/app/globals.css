@@ -39,7 +39,7 @@ html { scroll-behavior: smooth; }
 .step-sheet.from-left { --dx: -48px; }
 @keyframes sheet-in { from { opacity: 0; transform: translateX(var(--dx, 0)) translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
 
-.stage-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 3rem; height: 3rem; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 70%, transparent); backdrop-filter: blur(8px); color: var(--text); font-size: 1.75rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s ease, border-color .2s ease, opacity .2s ease, transform .2s ease; }
+.stage-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 7; width: 3rem; height: 3rem; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 70%, transparent); backdrop-filter: blur(8px); color: var(--text); font-size: 1.75rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s ease, border-color .2s ease, opacity .2s ease, transform .2s ease; }
 .stage-arrow.left { left: 1rem; }
 .stage-arrow.right { right: 1rem; }
 .stage-arrow:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-50%) scale(1.06); }
