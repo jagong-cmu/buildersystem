@@ -94,7 +94,7 @@ export function FabricRenderer({ manual, step, registerSnapshot }: RendererProps
               const seamEdge = meta.seam && (meta.seam.a[0] === p.id ? meta.seam.a[1] : meta.seam.b[0] === p.id ? meta.seam.b[1] : null);
               if (hidden) return null;
               return (
-                <g key={p.id} transform={`translate(${x0} 0)`} opacity={active || cutMode ? 1 : 0.6}>
+                <g key={p.id} transform={`translate(${x0} 0)`} opacity={active || cutMode ? 1 : 0.6} style={{ transition: "opacity .4s ease" }}>
                   <polygon points={p.placement.polygonMm.map(([x, y]) => `${x},${y}`).join(" ")} fill={CLASS_COLOR[p.placement.fabricClass] ?? "#777"} stroke={active ? "#ffb020" : "#fff8"} strokeWidth={(active ? 3 : 1) / scale} />
                   <polygon points={p.placement.polygonMm.map(([x, y]) => `${x},${y}`).join(" ")} fill="url(#fabric)" />
                   {seamEdge && <SeamEdge b={b} edge={seamEdge} scale={scale} />}
