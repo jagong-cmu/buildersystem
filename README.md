@@ -19,6 +19,12 @@ Vision can use the AI Gateway, Google Gemini, or Anthropic directly. Set
 `google/gemini-3.6-flash`; use `VISION_MODEL=google/gemini-3.1-pro-preview` or an
 `anthropic/...` model to select a direct provider explicitly.
 
+LEGO part identification uses [Brickognize](https://brickognize.com) (public API,
+no key, BrickLink part numbers and colours): the vision model only localizes each
+piece and every crop is classified by Brickognize. With no vision provider
+configured the whole frame is sent as a single piece. `BRICKOGNIZE=0` reverts to
+vision-model classification for LEGO.
+
 - Web app: http://localhost:3000 — `/scan`, `/builds`, `/guide/<manualId>`, `/live`
 - Phone as camera: open `http://<laptop-lan-ip>:3000/source/phone` on a phone on the same Wi-Fi, set the hub to `ws://<laptop-lan-ip>:8787`, Start. (Camera needs a secure context: use `next dev --experimental-https` or a localhost tunnel.)
 - Hub health: `curl localhost:8787/health`

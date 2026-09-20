@@ -113,4 +113,7 @@ describe("aggregateFrames minFrames", () => {
     const out = aggregateFrames([[item("A", 1, 0.9), item("B", 1, 0.9)], [item("A", 2, 0.8)]], 2);
     expect(out.map((it) => it.partType)).toEqual(["A"]);
   });
+  it("counts frames, not rows: duplicates inside one frame do not confirm", () => {
+    expect(aggregateFrames([[item("A", 1, 0.9), item("A", 2, 0.8)]], 2)).toEqual([]);
+  });
 });
