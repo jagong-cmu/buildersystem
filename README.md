@@ -51,6 +51,8 @@ pnpm --filter stream-hub record -- --source glasses --dir recordings/take1 [--se
 pnpm --filter stream-hub sim -- --dir recordings/take1 --loop
 ```
 
+Real glasses: the iOS bridge in `apps/glasses-bridge-ios` (Meta Wearables DAT 0.9.0) streams the glasses camera into the hub as source `glasses`, exposes Scan / Check / Next / Prev / Missing buttons and speaks every `say` message. Setup, Mock Device Kit workflow and the on-device checklist are in [`docs/glasses-bridge.md`](docs/glasses-bridge.md).
+
 ## Add a manual
 
 Drop a folder under `manuals/<domain>/<id>/` with `meta.json` and the source file (`model.ldr` for LEGO — export from BrickLink Studio with steps; `manual.json` for breadboard/fabric, see PRD §10 for the schemas). Requirements and callouts are derived from the file. `pnpm manuals:index` fails loudly on a bad manual.
@@ -64,7 +66,7 @@ For LEGO, `0 !RC TITLE …` and `0 !RC TEXT …` meta lines before a `0 STEP` se
 - [x] **M2** stream hub (frames, ring buffer, control bus, motion detector, probe queue), phone PWA source, `/scan` with live feed + editable inventory, vision inventory API, `/live` debug
 - [ ] **M3** UNO Q probe agent + firmware (`services/unoq-agent`), hardware verifier wired into the guide (the hub's `/probe/*` queue and the step `probes` are ready)
 - [x] **M4a** glasses-first web: simulator + recorder, primary-source model, continuous inventory, detection overlay, hands-free guide (auto-verify + narration)
-- [ ] **M4b** glasses bridge app (`apps/glasses-bridge-*`) speaking the hub protocol; TTS of `say` messages
+- [~] **M4b** glasses bridge app (`apps/glasses-bridge-ios`) speaking the hub protocol; TTS of `say` messages — written against the DAT 0.9.0 interfaces + Mock Device Kit, awaiting a Mac build and the on-device checklist
 - [ ] **M5** demo assets (real manuals for the chosen LEGO set, reference photos for vision, marker mat), rehearsal, recorded fallback
 - Vision verifier (`/api/verify`) is implemented and returns `unsure` with a plain hint when the hub or provider is unavailable; **Mark done** always works.
 - Dropbox Phase A build-record export and `/library` connection are complete; Phases B–D are planned.

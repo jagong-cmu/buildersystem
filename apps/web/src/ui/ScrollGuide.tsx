@@ -68,6 +68,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
   const [countdown, setCountdown] = useState<{ step: number; left: number } | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const latestCheck = useRef<(step: number, auto?: boolean) => Promise<void>>(async () => {});
+  const latestGoTo = useRef<(i: number) => void>(() => {});
   const [drawer, setDrawer] = useState(false);
   const [tallyOpen, setTallyOpen] = useState(true);
   const [missingOpen, setMissingOpen] = useState(false);
@@ -103,7 +104,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     if (active > 0) {
       armedAt.current[active] ??= Date.now();
       const s = manual.steps[active - 1];
-      sendControl({ type: "step.activated", manualId: manual.id, step: active, text: s.text });
+      sendControl({ type: "step.activated", manualId: manual.id, step: active, text: s.text, callouts: s.callouts, total: manual.steps.length });
       sendControl({ type: "say", text: `Step ${active}. ${s.text}` });
     }
   }, [active, manual]);
@@ -135,6 +136,10 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     sendControl({ type: "say", text: `Plan updated from step ${result.fromStep}.` });
   }, [have, inventory, manual, plugin, goTo]);
 
+  useEffect(() => {
+    latestGoTo.current = goTo;
+  }, [goTo]);
+
   const latestReportMissing = useRef(reportMissing);
   useEffect(() => {
     latestReportMissing.current = reportMissing;
@@ -160,6 +165,14 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
       if (msg.type === "motion" && msg.source === primaryId && (msg.state === "active" || msg.state === "settled")) {
         const step = autoVerify.current.onMotion(msg.state);
         if (step != null) void latestCheck.current(step, true);
+        return;
+      }
+      // Remote operator controls (glasses bridge / phone PWA buttons).
+      if (msg.type === "next") return latestGoTo.current(activeRef.current + 1);
+      if (msg.type === "prev") return latestGoTo.current(activeRef.current - 1);
+      if (msg.type === "check" && msg.origin !== "guide") {
+        const step = typeof msg.step === "number" && msg.step > 0 ? msg.step : activeRef.current;
+        if (step > 0) void latestCheck.current(step);
         return;
       }
       if (msg.type !== "part.missing" || typeof msg.partType !== "string") return;
@@ -263,7 +276,7 @@ export function ScrollGuide({ initial, dropbox }: { initial: Manual; dropbox: bo
     if (autoVerify.current.checking) return;
     autoVerify.current.setChecking(true);
     setVerify((v) => ({ ...v, [step]: { manualId: manual.id, step, status: "checking" } }));
-    sendControl({ type: "check", step });
+    sendControl({ type: "check", step, origin: "guide" });
     if (auto) sendControl({ type: "say", text: `Checking step ${step}.` });
     try {
       if (manual.steps[step - 1]?.expected.probes?.length) {
