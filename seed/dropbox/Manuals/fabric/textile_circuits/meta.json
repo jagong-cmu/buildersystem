@@ -3,8 +3,8 @@
   "description": "An openly licensed making guide for fabric-based interactive experiments.",
   "estMinutes": 15,
   "source": {
-    "url": "https://cdn.sparkfun.com/assets/learn_tutorials/7/5/6/lovetocode-vol1-makecode.pdf",
-    "license": "CC BY-SA 4.0",
-    "attribution": "Jie Qi / Chibitronics"
+    "url": "https://files.howtolivewiki.com/hexayurt.com/MaketheHexayurtv071202.pdf",
+    "license": "Open Source / copyright-free",
+    "attribution": "Hexayurt project"
   }
 }

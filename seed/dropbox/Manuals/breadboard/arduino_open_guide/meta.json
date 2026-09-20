@@ -3,8 +3,8 @@
   "description": "An openly licensed introduction to interactive circuits and programming.",
   "estMinutes": 10,
   "source": {
-    "url": "https://cdn.sparkfun.com/assets/learn_tutorials/7/5/6/lovetocode-vol1-ChibiScript_Arduino.pdf",
+    "url": "https://cdn.sparkfun.com/assets/resources/4/LilyPad_handout.pdf",
     "license": "CC BY-SA 4.0",
-    "attribution": "Jie Qi / Chibitronics"
+    "attribution": "SparkFun Electronics"
   }
 }

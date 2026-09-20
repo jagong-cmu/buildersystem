@@ -18,9 +18,10 @@ domains:
   `photos.json`. The uploader copies those files to Dropbox without adding
   duplicate binaries to the repository.
 
-The six PDF fixtures use the openly licensed Chibitronics *Love to Code:
-Volume 1* editions, licensed CC BY-SA 4.0 by Jie Qi / Chibitronics. The source
-URL and attribution are repeated in each `meta.json`.
+The PDF fixtures use short openly licensed maker guides. SparkFun's LilyPad
+and Squishy Circuits handouts are CC BY-SA; the Hexayurt instructions are
+published as open-source/copyright-free construction instructions. The source
+URL, license, and attribution are repeated in each `meta.json`.
 
 From the repository root, with Dropbox credentials in `apps/web/.env.local`:
 
