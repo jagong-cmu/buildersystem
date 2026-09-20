@@ -116,6 +116,9 @@ struct BridgeView: View {
                                                         stream.socket.stats.sent, stream.socket.stats.dropped))
             if let err = stream.lastError {
                 Text(err).font(.footnote).foregroundStyle(.red)
+                if err.localizedCaseInsensitiveContains("App Connections") {
+                    Button("Open App Connections in Meta AI") { Task { await stream.openGlassesAppUpdate() } }
+                }
             }
             DisclosureGroup("Encoding") {
                 Stepper("Max \(Int(settings.maxFps)) fps", value: $settings.maxFps, in: 1 ... 10)
