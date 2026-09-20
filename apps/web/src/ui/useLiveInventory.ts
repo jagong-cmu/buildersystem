@@ -104,7 +104,7 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
       if (!alive || pending.current || inventoryBusy()) return;
       const now = Date.now();
       if (motion.current === "active" && now - lastProcessedAt.current < ACTIVE_STARVATION_MS) return;
-      const frame = await fetchLatestFrame(sourceId);
+      const frame = await fetchLatestFrame(sourceId).catch(() => null);
       if (!alive || !frame || frame.seq === lastSeq.current) {
         if (frame) setStats((s) => ({ ...s, skipped: s.skipped + 1 }));
         return;
