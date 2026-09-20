@@ -100,12 +100,14 @@ function Brick({ inst, phase, animateKey, order }: { inst: PartInstance<LegoPlac
 /** Smoothly re-targets the orbit controls at the parts placed so far. */
 function Framer({ target, size }: { target: THREE.Vector3; size: number }) {
   const controls = useRef<OrbitControlsImpl>(null);
-  const { camera } = useThree();
+  const { camera, size: viewport } = useThree();
   const framed = useRef(false);
   useFrame(() => {
     const c = controls.current;
     if (!c) return;
-    const d = Math.max(220, size * 2.0);
+    // Portrait viewports have a narrower horizontal FOV, so back off proportionally.
+    const aspect = Math.max(0.3, viewport.width / Math.max(1, viewport.height));
+    const d = Math.max(220, size * 2.0) * Math.max(1, 1.25 / aspect);
     if (!framed.current) {
       framed.current = true;
       c.target.copy(target);
