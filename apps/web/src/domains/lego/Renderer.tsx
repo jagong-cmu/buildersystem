@@ -3,7 +3,7 @@
 // Swap `BrickGeometry` for LDrawLoader part geometry later; the placement math stays the same.
 import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Edges, OrbitControls } from "@react-three/drei";
+import { Edges, OrbitControls, type EdgesRef } from "@react-three/drei";
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { RendererProps } from "@/core/plugin";
@@ -11,7 +11,19 @@ import type { LegoPlacement, PartInstance } from "@/core/types";
 import { COLORS, dimsOf } from "./dims";
 
 const FLY_IN_LDU = 72; // three bricks above the target
-const FLY_IN_S = 0.6;
+const FLY_IN_S = 0.7;
+const STAGGER_S = 0.12;
+const HIGHLIGHT = new THREE.Color("#ffb020");
+const EDGE = new THREE.Color("#ffffff");
+
+/** Ease-out with a small settle bounce, like a brick clicking onto studs. */
+function settle(t: number): number {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  const c = 1.4;
+  const x = t - 1;
+  return 1 + x * x * ((c + 1) * x + c);
+}
 
 type Phase = "hidden" | "placed" | "current";
 
@@ -26,22 +38,43 @@ function Brick({ inst, phase, animateKey, order }: { inst: PartInstance<LegoPlac
   const matrix = useMemo(() => ldrawMatrix(inst.placement), [inst.placement]);
   const outer = useRef<THREE.Group>(null);
   const opacity = useRef(phase === "hidden" ? 0 : 1);
+  const lift = useRef(0);
+  const glow = useRef(phase === "current" ? 1 : 0);
   const t = useRef(1);
   const materials = useRef<THREE.MeshStandardMaterial[]>([]);
+  const edge = useRef<EdgesRef>(null);
   useEffect(() => {
-    if (phase === "current") t.current = -(order * 0.08) / FLY_IN_S;
+    if (phase === "current") t.current = -(order * STAGGER_S) / FLY_IN_S;
   }, [animateKey, order, phase]);
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     if (!outer.current) return;
+    const k = 1 - Math.exp(-dt * 9);
     const targetOpacity = phase === "hidden" ? 0 : 1;
-    opacity.current += (targetOpacity - opacity.current) * (1 - Math.exp(-dt * 10));
+    opacity.current += (targetOpacity - opacity.current) * k;
     for (const material of materials.current) material.opacity = opacity.current;
     outer.current.visible = opacity.current > 0.01;
+
     if (t.current < 1) {
       t.current = Math.min(1, t.current + dt / FLY_IN_S);
-      const e = t.current < 0 ? 0 : 1 - Math.pow(1 - t.current, 4);
-      outer.current.position.y = -FLY_IN_LDU * (1 - e); // LDraw: -Y is up
-    } else outer.current.position.y = 0;
+      const e = settle(t.current);
+      lift.current = FLY_IN_LDU * (1 - e);
+      const s = 0.9 + 0.1 * Math.min(1, Math.max(0, t.current * 1.6));
+      outer.current.scale.setScalar(s);
+    } else {
+      // Removed bricks lift back off the model instead of just vanishing.
+      lift.current += ((phase === "hidden" ? FLY_IN_LDU * 0.5 : 0) - lift.current) * k;
+      outer.current.scale.setScalar(1);
+    }
+    outer.current.position.y = -lift.current; // LDraw: -Y is up
+
+    glow.current += ((phase === "current" ? 1 : 0) - glow.current) * (1 - Math.exp(-dt * 5));
+    const line = edge.current;
+    if (line) {
+      const { material } = line;
+      material.color.copy(EDGE).lerp(HIGHLIGHT, glow.current);
+      const pulse = 0.5 + 0.5 * Math.sin(clock.elapsedTime * 3.5);
+      material.opacity = opacity.current * (0.3 + glow.current * (0.4 + 0.3 * pulse));
+    }
   });
   const studs: [number, number][] = [];
   for (let i = 0; i < sx; i++) for (let j = 0; j < sz; j++) studs.push([-sx * 10 + 10 + i * 20, -sz * 10 + 10 + j * 20]);
@@ -51,7 +84,7 @@ function Brick({ inst, phase, animateKey, order }: { inst: PartInstance<LegoPlac
         <mesh position={[0, h / 2, 0]}>
           <boxGeometry args={[sx * 20 - 0.6, h - 0.4, sz * 20 - 0.6]} />
           <meshStandardMaterial ref={(material) => { if (material) materials.current[0] = material; }} color={color} transparent opacity={1} depthWrite roughness={0.45} metalness={0.05} />
-          <Edges color={phase === "current" ? "#ffb020" : "#ffffff"} threshold={15} transparent opacity={phase === "current" ? 0.9 : 0.35} />
+          <Edges ref={edge} color="#ffffff" threshold={15} transparent opacity={0.35} />
         </mesh>
         {studs.map(([x, z], k) => (
           <mesh key={k} position={[x, -2, z]}>
@@ -67,20 +100,22 @@ function Brick({ inst, phase, animateKey, order }: { inst: PartInstance<LegoPlac
 /** Smoothly re-targets the orbit controls at the parts placed so far. */
 function Framer({ target, size }: { target: THREE.Vector3; size: number }) {
   const controls = useRef<OrbitControlsImpl>(null);
-  const { camera } = useThree();
+  const { camera, size: viewport } = useThree();
   const framed = useRef(false);
   useFrame(() => {
     const c = controls.current;
     if (!c) return;
-    const d = Math.max(240, size * 2.2);
+    // Portrait viewports have a narrower horizontal FOV, so back off proportionally.
+    const aspect = Math.max(0.3, viewport.width / Math.max(1, viewport.height));
+    const d = Math.max(220, size * 2.0) * Math.max(1, 1.25 / aspect);
     if (!framed.current) {
       framed.current = true;
       c.target.copy(target);
       camera.position.set(target.x + d * 0.7, target.y + d * 0.6, target.z + d * 0.7);
     } else {
-      c.target.lerp(target, 0.08);
+      c.target.lerp(target, 0.05);
       const dir = camera.position.clone().sub(c.target).normalize();
-      camera.position.lerp(c.target.clone().add(dir.multiplyScalar(d)), 0.06);
+      camera.position.lerp(c.target.clone().add(dir.multiplyScalar(d)), 0.04);
     }
     c.update();
   });
@@ -122,7 +157,8 @@ export function LegoRenderer({ manual, step, direction, registerSnapshot }: Rend
     const c = box.getCenter(new THREE.Vector3());
     const s = box.getSize(new THREE.Vector3()).length();
     // LDraw → three: the scene group is rotated π about X, so (x, y, z) → (x, -y, -z).
-    return { target: new THREE.Vector3(c.x, -c.y, -c.z), size: s };
+    // Aim slightly below the model so it sits above the step card at the bottom of the stage.
+    return { target: new THREE.Vector3(c.x, -c.y - s * 0.22, -c.z), size: s };
   }, [manual, step, stepOf]);
 
   // Fly-in only when moving forward; scrolling back just removes parts.

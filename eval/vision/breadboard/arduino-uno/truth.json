@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "partType": "bb:uno", "qty": 1 }
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Arduino_Uno_board.jpg",
+  "license": "CC0",
+  "note": "One isolated Arduino Uno-format board."
+}

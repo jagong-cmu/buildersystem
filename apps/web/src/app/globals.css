@@ -31,10 +31,39 @@ body { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-.step-card { transition: border-color .3s ease, opacity .3s ease, transform .3s ease, box-shadow .3s ease; opacity: .62; }
-.step-card.is-active { opacity: 1; border-color: var(--accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 12px 32px -16px color-mix(in srgb, var(--accent) 45%, transparent); }
-.step-card.is-done { opacity: .8; }
-.step-card:hover { opacity: 1; }
+.stage { position: relative; height: 100%; overflow: hidden; background: #0f1318; }
+.stage-vignette { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 55%, transparent), transparent 22%, transparent 55%, color-mix(in srgb, var(--bg) 75%, transparent)); }
+
+.step-sheet { width: 100%; max-width: 40rem; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: .7rem; background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(14px); box-shadow: 0 24px 60px -30px rgba(0,0,0,.8); animation: sheet-in .45s cubic-bezier(.22,1,.36,1) both; }
+.step-sheet.from-right { --dx: 48px; }
+.step-sheet.from-left { --dx: -48px; }
+@keyframes sheet-in { from { opacity: 0; transform: translateX(var(--dx, 0)) translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+
+.stage-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 3rem; height: 3rem; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 70%, transparent); backdrop-filter: blur(8px); color: var(--text); font-size: 1.75rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s ease, border-color .2s ease, opacity .2s ease, transform .2s ease; }
+.stage-arrow.left { left: 1rem; }
+.stage-arrow.right { right: 1rem; }
+.stage-arrow:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-50%) scale(1.06); }
+.stage-arrow:disabled { opacity: .2; cursor: default; }
+@media (max-width: 640px) { .stage-arrow { display: none; } }
+
+.step-dots { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; max-width: 40rem; }
+.step-dot { width: .5rem; height: .5rem; border-radius: 999px; background: var(--line); border: 0; padding: 0; cursor: pointer; transition: transform .3s cubic-bezier(.22,1,.36,1), background .3s ease, width .3s cubic-bezier(.22,1,.36,1); }
+.step-dot:hover { background: var(--muted); }
+.step-dot.done { background: var(--ok); }
+.step-dot.active { background: var(--accent); width: 1.5rem; }
+
+.live-pip { position: absolute; right: 1rem; top: 4rem; width: 22rem; max-width: 45%; z-index: 6; animation: sheet-in .35s cubic-bezier(.22,1,.36,1) both; --dx: 24px; }
+
+.dot { display: inline-block; width: .45rem; height: .45rem; border-radius: 999px; margin-left: .35rem; background: var(--muted); }
+.dot.warn { background: var(--warn); }
+
+.drawer-scrim { position: absolute; inset: 0; z-index: 19; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+.drawer-scrim.open { opacity: 1; pointer-events: auto; }
+.drawer { position: absolute; top: 0; right: 0; bottom: 0; z-index: 20; width: min(24rem, 92vw); padding: 1rem 1.25rem; overflow-y: auto; background: color-mix(in srgb, var(--panel) 94%, transparent); backdrop-filter: blur(16px); border-left: 1px solid var(--line); transform: translateX(105%); transition: transform .4s cubic-bezier(.22,1,.36,1); }
+.drawer.open { transform: none; }
+.step-row { width: 100%; display: flex; align-items: center; gap: .6rem; padding: .3rem .4rem; border-radius: 8px; text-align: left; color: var(--text); background: transparent; border: 0; cursor: pointer; transition: background .2s ease; }
+.step-row:hover, .step-row.active { background: var(--panel-2); }
+
 .step-num { font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: .8rem; min-width: 1.75rem; height: 1.75rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--panel-2); transition: background .3s ease, color .3s ease; }
 .step-num.active { background: var(--accent); color: #111; font-weight: 600; }
 .step-num.done { background: color-mix(in srgb, var(--ok) 25%, var(--panel-2)); color: var(--ok); }

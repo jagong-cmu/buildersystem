@@ -106,7 +106,7 @@ export function BreadboardRenderer({ manual, step, registerSnapshot }: RendererP
   }
 
   return (
-    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full h-full" style={{ background: "#0f1318" }}>
+    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMin meet" style={{ background: "#0f1318", padding: "4.5rem 4rem 17rem", boxSizing: "border-box" }}>
       <defs>
         <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#ffb020" floodOpacity="0.9" />

@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "partType": "lego:3001", "color": "yellow", "qty": 4 }
+  ],
+  "source": "https://commons.wikimedia.org/wiki/File:Yellow-lego.JPG",
+  "license": "CC BY-SA 3.0",
+  "note": "Hard monochrome pile with more than 15 visible pieces. Truth counts four fully visible standard 2x4 bricks; special shapes and occluded pieces are omitted."
+}

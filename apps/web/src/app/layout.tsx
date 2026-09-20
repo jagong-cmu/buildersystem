@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      <body className="h-full flex flex-col">
         <header className="flex items-center gap-4 px-5 py-3 border-b" style={{ borderColor: "var(--line)" }}>
           <Link href="/" className="font-semibold tracking-tight">
             Reality Compiler
@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <NarrationToggle />
           </div>
         </header>
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 min-h-0">{children}</main>
       </body>
     </html>
   );

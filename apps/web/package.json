@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "eval:vision": "tsx --env-file=.env.local scripts/eval-vision.ts",
     "manuals:index": "tsx scripts/index-manuals.ts",
     "predev": "pnpm manuals:index",
     "prebuild": "pnpm manuals:index",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.58",
+    "@ai-sdk/google": "4.0.69",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "ai": "^7.0.107",
