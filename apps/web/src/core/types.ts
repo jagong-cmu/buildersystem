@@ -37,6 +37,10 @@ export interface Inventory {
   capturedAt: string;
   sourceId: string;
   frameSeqs: number[];
+  dropbox?: {
+    sources: { path: string; capturedAt?: string }[];
+    updatedAt: string;
+  };
 }
 
 export interface PartInstance<P = unknown> {
