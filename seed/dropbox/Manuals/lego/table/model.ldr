@@ -1,0 +1,30 @@
+0 Side Table
+0 Name: model.ldr
+0 !RC TITLE Legs
+0 !RC TEXT Place four red 1x2 bricks at the corners as legs.
+1 4 -45 -24 -30 1 0 0 0 1 0 0 0 1 3004.dat
+1 4 45 -24 -30 1 0 0 0 1 0 0 0 1 3004.dat
+1 4 -45 -24 30 1 0 0 0 1 0 0 0 1 3004.dat
+1 4 45 -24 30 1 0 0 0 1 0 0 0 1 3004.dat
+0 STEP
+0 !RC TITLE Front brace
+0 !RC TEXT Join the front legs with a blue 1x4 brick.
+1 1 0 -48 -30 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Back brace
+0 !RC TEXT Join the back legs with a blue 1x4 brick.
+1 1 0 -48 30 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Side braces
+0 !RC TEXT Add two green 1x2 bricks between the side legs.
+1 2 -45 -48 0 1 0 0 0 1 0 0 0 1 3004.dat
+1 2 45 -48 0 1 0 0 0 1 0 0 0 1 3004.dat
+0 STEP
+0 !RC TITLE Top
+0 !RC TEXT Place a yellow 2x8 plate across the four legs.
+1 14 0 -64 0 1 0 0 0 1 0 0 0 1 3034.dat
+0 STEP
+0 !RC TITLE Top trim
+0 !RC TEXT Add white 1x4 bricks along the front and back edges.
+1 15 0 -88 -35 1 0 0 0 1 0 0 0 1 3010.dat
+1 15 0 -88 35 1 0 0 0 1 0 0 0 1 3010.dat

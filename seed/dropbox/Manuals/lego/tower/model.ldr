@@ -1,0 +1,29 @@
+0 Color Tower
+0 Name: model.ldr
+0 !RC TITLE Foundation
+0 !RC TEXT Place two red 2x4 bricks side by side for the foundation.
+1 4 -20 -24 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 4 20 -24 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+0 !RC TITLE Second course
+0 !RC TEXT Add two blue 2x4 bricks, offset to cross the foundation seam.
+1 1 0 -48 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 1 0 -48 20 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+0 !RC TITLE Third course
+0 !RC TEXT Add two green 2x2 bricks at the front corners.
+1 2 -30 -72 -10 1 0 0 0 1 0 0 0 1 3003.dat
+1 2 30 -72 -10 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Fourth course
+0 !RC TEXT Bridge the corners with a yellow 2x4 brick.
+1 14 0 -96 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+0 !RC TITLE Fifth course
+0 !RC TEXT Add two red 1x4 bricks along the sides.
+1 4 -30 -120 0 1 0 0 0 1 0 0 0 1 3010.dat
+1 4 30 -120 0 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Roof
+0 !RC TEXT Cap the tower with a blue 2x8 plate.
+1 1 0 -128 0 1 0 0 0 1 0 0 0 1 3034.dat

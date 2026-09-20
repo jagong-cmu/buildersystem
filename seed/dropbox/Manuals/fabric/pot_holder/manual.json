@@ -1,0 +1,15 @@
+{
+  "pieces": [
+    { "id": "outer", "polygonMm": [[0,0],[220,0],[220,220],[0,220]], "fabricClass": "fab:cotton_woven", "qty": 2 },
+    { "id": "insulation", "polygonMm": [[0,0],[220,0],[220,220],[0,220]], "fabricClass": "fab:fleece", "qty": 2 }
+  ],
+  "notions": [{ "partType": "fab:thread", "qty": 1 }, { "partType": "fab:button", "qty": 1 }],
+  "steps": [
+    { "kind": "cut", "pieces": ["outer", "insulation"], "text": "Cut two 220 mm cotton squares and two matching fleece squares." },
+    { "kind": "pin", "pieces": ["outer", "insulation"], "text": "Layer cotton, fleece, fleece, and cotton, then pin the stack." },
+    { "kind": "sew", "seam": { "a": ["outer_1", "all"], "b": ["outer_2", "all"] }, "text": "Sew around the stack, leaving a turning gap." },
+    { "kind": "turn", "text": "Trim corners, turn right side out, and press the edges." },
+    { "kind": "sew", "seam": { "a": ["outer_1", "edge"], "b": ["outer_2", "edge"] }, "text": "Topstitch around the edge and close the gap." },
+    { "kind": "attach", "notion": "fab:button", "text": "Add a button or loop anchor at one corner for hanging." }
+  ]
+}

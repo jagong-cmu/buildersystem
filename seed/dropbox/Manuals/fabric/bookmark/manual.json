@@ -1,0 +1,14 @@
+{
+  "pieces": [
+    { "id": "denim", "polygonMm": [[0,0],[55,0],[55,220],[0,220]], "fabricClass": "fab:denim", "qty": 1 },
+    { "id": "lining", "polygonMm": [[0,0],[55,0],[55,220],[0,220]], "fabricClass": "fab:cotton_woven", "qty": 1 }
+  ],
+  "notions": [{ "partType": "fab:thread", "qty": 1 }],
+  "steps": [
+    { "kind": "cut", "pieces": ["denim", "lining"], "text": "Cut one 55 × 220 mm denim strip and one matching cotton strip." },
+    { "kind": "pin", "pieces": ["denim", "lining"], "text": "Pin the strips right sides together along all edges." },
+    { "kind": "sew", "seam": { "a": ["denim", "all"], "b": ["lining", "all"] }, "text": "Sew around the strip, leaving a 30 mm turning gap." },
+    { "kind": "turn", "text": "Trim the corners, turn through the gap, and press flat." },
+    { "kind": "sew", "seam": { "a": ["denim", "edge"], "b": ["lining", "edge"] }, "text": "Topstitch the perimeter and close the gap." }
+  ]
+}

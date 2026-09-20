@@ -1,0 +1,25 @@
+{
+  "board": "uno",
+  "parts": [
+    { "id": "red", "partType": "bb:led_red", "pins": [{ "row": "e", "col": 4 }, { "row": "e", "col": 5 }], "polarity": ["anode", "cathode"] },
+    { "id": "yellow", "partType": "bb:led_yellow", "pins": [{ "row": "e", "col": 10 }, { "row": "e", "col": 11 }], "polarity": ["anode", "cathode"] },
+    { "id": "green", "partType": "bb:led_green", "pins": [{ "row": "e", "col": 16 }, { "row": "e", "col": 17 }], "polarity": ["anode", "cathode"] },
+    { "id": "r1", "partType": "bb:resistor_220", "pins": [{ "row": "d", "col": 5 }, { "row": "gnd", "col": 5 }] },
+    { "id": "r2", "partType": "bb:resistor_220", "pins": [{ "row": "d", "col": 11 }, { "row": "gnd", "col": 11 }] },
+    { "id": "r3", "partType": "bb:resistor_220", "pins": [{ "row": "d", "col": 17 }, { "row": "gnd", "col": 17 }] }
+  ],
+  "wires": [
+    { "id": "gnd", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },
+    { "id": "red_signal", "from": { "board": "D8" }, "to": { "row": "a", "col": 4 }, "color": "red" },
+    { "id": "yellow_signal", "from": { "board": "D7" }, "to": { "row": "a", "col": 10 }, "color": "yellow" },
+    { "id": "green_signal", "from": { "board": "D6" }, "to": { "row": "a", "col": 16 }, "color": "green" }
+  ],
+  "steps": [
+    { "title": "Ground", "add": ["gnd"], "text": "Connect GND to the ground rail." },
+    { "title": "Red lamp", "add": ["red", "r1", "red_signal"], "text": "Place the red LED at e4/e5, add its 220Ω resistor, and wire D8 to a4." },
+    { "title": "Yellow lamp", "add": ["yellow", "r2", "yellow_signal"], "text": "Place the yellow LED at e10/e11, add its 220Ω resistor, and wire D7 to a10." },
+    { "title": "Green lamp", "add": ["green", "r3", "green_signal"], "text": "Place the green LED at e16/e17, add its 220Ω resistor, and wire D6 to a16." },
+    { "title": "Sequence", "add": ["red"], "text": "Run the traffic-light sequence: red, yellow, then green.", "probes": [{ "pin": "D8", "mode": "pulse", "expect": { "value": 1 }, "note": "Red phase is visible" }] }
+  ],
+  "sketch": "traffic_light.ino"
+}

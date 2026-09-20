@@ -1,0 +1,23 @@
+{
+  "board": "uno",
+  "parts": [
+    { "id": "ldr", "partType": "bb:photoresistor", "pins": [{ "row": "e", "col": 10 }, { "row": "e", "col": 14 }] },
+    { "id": "divider", "partType": "bb:resistor_10k", "pins": [{ "row": "d", "col": 14 }, { "row": "d", "col": 18 }] },
+    { "id": "led", "partType": "bb:led_yellow", "pins": [{ "row": "e", "col": 22 }, { "row": "e", "col": 23 }], "polarity": ["anode", "cathode"] },
+    { "id": "led_res", "partType": "bb:resistor_220", "pins": [{ "row": "d", "col": 23 }, { "row": "gnd", "col": 23 }] }
+  ],
+  "wires": [
+    { "id": "gnd", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },
+    { "id": "vcc", "from": { "board": "5V" }, "to": { "row": "a", "col": 10 }, "color": "red" },
+    { "id": "sense", "from": { "row": "a", "col": 14 }, "to": { "board": "A0" }, "color": "blue" },
+    { "id": "divider_gnd", "from": { "row": "a", "col": 18 }, "to": { "row": "gnd", "col": 18 }, "color": "black" },
+    { "id": "light", "from": { "board": "D9" }, "to": { "row": "a", "col": 22 }, "color": "yellow" }
+  ],
+  "steps": [
+    { "title": "Ground", "add": ["gnd"], "text": "Connect GND to the ground rail." },
+    { "title": "Sensor", "add": ["ldr", "vcc"], "text": "Place the photoresistor across e10–e14 and connect 5V to a10." },
+    { "title": "Divider", "add": ["divider", "sense", "divider_gnd"], "text": "Add the 10kΩ resistor from d14 to d18, connect the midpoint to A0, and ground d18.", "probes": [{ "pin": "A0", "mode": "analogRead", "expect": { "min": 100, "max": 950 }, "note": "Room light gives a middle-range reading" }] },
+    { "title": "Lamp", "add": ["led", "led_res", "light"], "text": "Place the yellow LED at e22/e23, add its 220Ω resistor, and wire D9 to a22.", "probes": [{ "pin": "D9", "mode": "pulse", "expect": { "value": 1 }, "note": "LED turns on in darkness" }] }
+  ],
+  "sketch": "night_light_plus.ino"
+}

@@ -1,0 +1,29 @@
+0 Letter R
+0 Name: model.ldr
+0 !RC TITLE Base
+0 !RC TEXT Lay two blue 2x8 plates side by side.
+1 1 -30 -8 0 1 0 0 0 1 0 0 0 1 3034.dat
+1 1 30 -8 0 1 0 0 0 1 0 0 0 1 3034.dat
+0 STEP
+0 !RC TITLE Stem
+0 !RC TEXT Build the left stem with two red 2x4 bricks.
+1 4 -60 -32 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 4 -60 -56 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+0 !RC TITLE Top bowl
+0 !RC TEXT Add two yellow 1x4 bricks across the top.
+1 14 -20 -32 0 1 0 0 0 1 0 0 0 1 3010.dat
+1 14 20 -32 0 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Middle bowl
+0 !RC TEXT Add a green 1x4 brick across the middle.
+1 2 0 -56 0 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Diagonal
+0 !RC TEXT Add two white 1x2 bricks to form the diagonal leg.
+1 15 25 -80 0 1 0 0 0 1 0 0 0 1 3004.dat
+1 15 45 -80 20 1 0 0 0 1 0 0 0 1 3004.dat
+0 STEP
+0 !RC TITLE Foot
+0 !RC TEXT Finish the diagonal with a red 2x4 brick at the foot.
+1 4 55 -104 35 1 0 0 0 1 0 0 0 1 3001.dat

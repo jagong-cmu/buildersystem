@@ -1,0 +1,22 @@
+{
+  "board": "uno",
+  "parts": [
+    { "id": "red", "partType": "bb:led_red", "pins": [{ "row": "e", "col": 8 }, { "row": "e", "col": 9 }], "polarity": ["anode", "cathode"] },
+    { "id": "green", "partType": "bb:led_green", "pins": [{ "row": "e", "col": 16 }, { "row": "e", "col": 17 }], "polarity": ["anode", "cathode"] },
+    { "id": "rr", "partType": "bb:resistor_220", "pins": [{ "row": "d", "col": 9 }, { "row": "gnd", "col": 9 }] },
+    { "id": "rg", "partType": "bb:resistor_220", "pins": [{ "row": "d", "col": 17 }, { "row": "gnd", "col": 17 }] }
+  ],
+  "wires": [
+    { "id": "gnd", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },
+    { "id": "wr", "from": { "board": "D8" }, "to": { "row": "a", "col": 8 }, "color": "red" },
+    { "id": "wg", "from": { "board": "D7" }, "to": { "row": "a", "col": 16 }, "color": "green" }
+  ],
+  "steps": [
+    { "title": "Ground rail", "add": ["gnd"], "text": "Connect GND to the ground rail." },
+    { "title": "Red LED", "add": ["red", "rr"], "text": "Place the red LED at e8/e9 and its 220Ω resistor from d9 to ground." },
+    { "title": "Green LED", "add": ["green", "rg"], "text": "Place the green LED at e16/e17 and its 220Ω resistor from d17 to ground." },
+    { "title": "Red signal", "add": ["wr"], "text": "Wire D8 to a8.", "probes": [{ "pin": "D8", "mode": "pulse", "expect": { "value": 1 }, "note": "Red LED flashes during its turn" }] },
+    { "title": "Green signal", "add": ["wg"], "text": "Wire D7 to a16.", "probes": [{ "pin": "D7", "mode": "pulse", "expect": { "value": 1 }, "note": "Green LED flashes during its turn" }] }
+  ],
+  "sketch": "alternating_leds.ino"
+}

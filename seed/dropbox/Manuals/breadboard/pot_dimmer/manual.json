@@ -1,0 +1,21 @@
+{
+  "board": "uno",
+  "parts": [
+    { "id": "pot", "partType": "bb:potentiometer", "pins": [{ "row": "e", "col": 10 }, { "row": "e", "col": 12 }, { "row": "e", "col": 14 }] },
+    { "id": "led", "partType": "bb:led_blue", "pins": [{ "row": "e", "col": 22 }, { "row": "e", "col": 23 }], "polarity": ["anode", "cathode"] },
+    { "id": "res", "partType": "bb:resistor_220", "pins": [{ "row": "d", "col": 23 }, { "row": "gnd", "col": 23 }] }
+  ],
+  "wires": [
+    { "id": "gnd", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },
+    { "id": "vcc", "from": { "board": "5V" }, "to": { "row": "a", "col": 10 }, "color": "red" },
+    { "id": "sense", "from": { "row": "a", "col": 12 }, "to": { "board": "A0" }, "color": "blue" },
+    { "id": "signal", "from": { "board": "D9" }, "to": { "row": "a", "col": 22 }, "color": "yellow" }
+  ],
+  "steps": [
+    { "title": "Ground", "add": ["gnd"], "text": "Connect GND to the ground rail." },
+    { "title": "Potentiometer", "add": ["pot", "vcc", "sense"], "text": "Seat the 10k potentiometer at columns 10, 12, and 14, then wire its outer leg to 5V and wiper to A0.", "probes": [{ "pin": "A0", "mode": "analogRead", "expect": { "min": 0, "max": 1023 }, "note": "Turning the knob changes the reading" }] },
+    { "title": "LED", "add": ["led", "res"], "text": "Place the blue LED at e22/e23 and a 220Ω resistor from d23 to ground." },
+    { "title": "PWM", "add": ["signal"], "text": "Wire D9 to a22.", "probes": [{ "pin": "D9", "mode": "pulse", "expect": { "value": 1 }, "note": "Brightness follows the knob" }] }
+  ],
+  "sketch": "pot_dimmer.ino"
+}

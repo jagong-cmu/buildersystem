@@ -1,0 +1,10 @@
+{
+  "title": "Maker patterns guide",
+  "description": "An openly licensed hands-on making guide included as a document-ingestion sample.",
+  "estMinutes": 12,
+  "source": {
+    "url": "https://cdn.sparkfun.com/assets/learn_tutorials/7/5/6/lovetocode-vol1-makecode.pdf",
+    "license": "CC BY-SA 4.0",
+    "attribution": "Jie Qi / Chibitronics"
+  }
+}

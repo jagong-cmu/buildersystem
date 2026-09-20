@@ -1,0 +1,21 @@
+{
+  "board": "uno",
+  "parts": [
+    { "id": "button", "partType": "bb:pushbutton", "pins": [{ "row": "e", "col": 6 }, { "row": "e", "col": 8 }, { "row": "f", "col": 6 }, { "row": "f", "col": 8 }] },
+    { "id": "buzzer", "partType": "bb:buzzer", "pins": [{ "row": "e", "col": 18 }, { "row": "e", "col": 20 }] }
+  ],
+  "wires": [
+    { "id": "gnd", "from": { "board": "GND" }, "to": { "row": "gnd", "col": 1 }, "color": "black" },
+    { "id": "button_vcc", "from": { "board": "5V" }, "to": { "row": "a", "col": 6 }, "color": "red" },
+    { "id": "button_in", "from": { "row": "a", "col": 8 }, "to": { "board": "D2" }, "color": "green" },
+    { "id": "buzz", "from": { "board": "D5" }, "to": { "row": "a", "col": 18 }, "color": "yellow" },
+    { "id": "buzz_gnd", "from": { "row": "a", "col": 20 }, "to": { "row": "gnd", "col": 20 }, "color": "black" }
+  ],
+  "steps": [
+    { "title": "Ground", "add": ["gnd"], "text": "Connect GND to the ground rail." },
+    { "title": "Button", "add": ["button", "button_vcc", "button_in"], "text": "Straddle the pushbutton across the center gap and wire 5V to one side and D2 to the other." },
+    { "title": "Buzzer", "add": ["buzzer", "buzz", "buzz_gnd"], "text": "Place the buzzer at e18/e20 and wire D5 to its positive leg and the other leg to ground." },
+    { "title": "Test", "add": ["buzzer"], "text": "Press the button to sound the buzzer.", "probes": [{ "pin": "D2", "mode": "digitalRead", "expect": { "value": 1 }, "note": "Button input changes when pressed" }] }
+  ],
+  "sketch": "buzzer_button.ino"
+}

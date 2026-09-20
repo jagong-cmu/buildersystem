@@ -1,0 +1,5 @@
+{
+  "title": "Traffic light",
+  "description": "Three LEDs share a ground rail and light in a simple traffic sequence.",
+  "estMinutes": 10
+}
