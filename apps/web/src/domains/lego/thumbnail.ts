@@ -1,7 +1,7 @@
 // Final-state thumbnail (PRD §5.3): an isometric 2D projection of the procedural bricks, no WebGL.
 // Node-safe (used by scripts/index-manuals.ts) — never import React or three here.
 import type { LegoPlacement, Manual } from "@/core/types";
-import { COLORS, dimsOf } from "./dims";
+import { COLORS, dimsOf, studPositions } from "./dims";
 
 type V3 = [number, number, number];
 
@@ -81,16 +81,15 @@ function brickFaces(p: LegoPlacement): Face[] {
     faces.push({ pts: corners.map(project), fill: shade(base, k), depth: Math.max(...corners.map(depth)) });
     if (f.n[1] === -1) {
       // studs on the top face, as small ellipses
-      for (let i = 0; i < sx; i++)
-        for (let j = 0; j < sz; j++) {
-          const c = apply(p, [-hx + 10 + i * 20, -2, -hz + 10 + j * 20]);
-          const ring: [number, number][] = [];
-          for (let a = 0; a < 12; a++) {
-            const t = (a / 12) * Math.PI * 2;
-            ring.push(project([c[0] + 6 * Math.cos(t), c[1], c[2] + 6 * Math.sin(t)]));
-          }
-          faces.push({ pts: ring, fill: shade(base, k * 1.1), depth: depth(c) + 0.01 });
+      for (const [sx0, sz0] of studPositions(p.ldrawPart)) {
+        const c = apply(p, [sx0, -2, sz0]);
+        const ring: [number, number][] = [];
+        for (let a = 0; a < 12; a++) {
+          const t = (a / 12) * Math.PI * 2;
+          ring.push(project([c[0] + 6 * Math.cos(t), c[1], c[2] + 6 * Math.sin(t)]));
         }
+        faces.push({ pts: ring, fill: shade(base, k * 1.1), depth: depth(c) + 0.01 });
+      }
     }
   }
   return faces;

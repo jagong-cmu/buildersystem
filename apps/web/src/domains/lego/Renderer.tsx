@@ -8,7 +8,8 @@ import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { RendererProps } from "@/core/plugin";
 import type { LegoPlacement, PartInstance } from "@/core/types";
-import { COLORS, dimsOf } from "./dims";
+import { COLORS, TRANSLUCENT, dimsOf, sideStudPositions, studPositions } from "./dims";
+import { partGeometry } from "./geometry";
 
 const FLY_IN_LDU = 72; // three bricks above the target
 const FLY_IN_S = 0.7;
@@ -33,8 +34,11 @@ function ldrawMatrix(p: LegoPlacement): THREE.Matrix4 {
 }
 
 function Brick({ inst, phase, animateKey, order }: { inst: PartInstance<LegoPlacement>; phase: Phase; animateKey: number; order: number }) {
-  const [sx, sz, h] = dimsOf(inst.placement.ldrawPart);
+  const part = inst.placement.ldrawPart;
+  const [, sz] = dimsOf(part);
   const color = COLORS[inst.placement.ldrawColor] ?? "#888";
+  const translucent = TRANSLUCENT.has(inst.placement.ldrawColor);
+  const geometry = useMemo(() => partGeometry(part), [part]);
   const matrix = useMemo(() => ldrawMatrix(inst.placement), [inst.placement]);
   const outer = useRef<THREE.Group>(null);
   const opacity = useRef(phase === "hidden" ? 0 : 1);
@@ -51,7 +55,7 @@ function Brick({ inst, phase, animateKey, order }: { inst: PartInstance<LegoPlac
     const k = 1 - Math.exp(-dt * 9);
     const targetOpacity = phase === "hidden" ? 0 : 1;
     opacity.current += (targetOpacity - opacity.current) * k;
-    for (const material of materials.current) material.opacity = opacity.current;
+    for (const material of materials.current) material.opacity = opacity.current * (translucent ? 0.45 : 1);
     outer.current.visible = opacity.current > 0.01;
 
     if (t.current < 1) {
@@ -76,20 +80,25 @@ function Brick({ inst, phase, animateKey, order }: { inst: PartInstance<LegoPlac
       material.opacity = opacity.current * (0.3 + glow.current * (0.4 + 0.3 * pulse));
     }
   });
-  const studs: [number, number][] = [];
-  for (let i = 0; i < sx; i++) for (let j = 0; j < sz; j++) studs.push([-sx * 10 + 10 + i * 20, -sz * 10 + 10 + j * 20]);
+  const studs = studPositions(part);
+  const sideStuds = sideStudPositions(part);
   return (
     <group ref={outer}>
       <group matrix={matrix} matrixAutoUpdate={false}>
-        <mesh position={[0, h / 2, 0]}>
-          <boxGeometry args={[sx * 20 - 0.6, h - 0.4, sz * 20 - 0.6]} />
-          <meshStandardMaterial ref={(material) => { if (material) materials.current[0] = material; }} color={color} transparent opacity={1} depthWrite roughness={0.45} metalness={0.05} />
+        <mesh geometry={geometry}>
+          <meshStandardMaterial ref={(material) => { if (material) materials.current[0] = material; }} color={color} transparent opacity={1} depthWrite={!translucent} roughness={translucent ? 0.15 : 0.45} metalness={0.05} />
           <Edges ref={edge} color="#ffffff" threshold={15} transparent opacity={0.35} />
         </mesh>
         {studs.map(([x, z], k) => (
           <mesh key={k} position={[x, -2, z]}>
             <cylinderGeometry args={[6, 6, 4, 20]} />
-            <meshStandardMaterial ref={(material) => { if (material) materials.current[k + 1] = material; }} color={color} transparent opacity={1} depthWrite roughness={0.45} />
+            <meshStandardMaterial ref={(material) => { if (material) materials.current[k + 1] = material; }} color={color} transparent opacity={1} depthWrite={!translucent} roughness={0.45} />
+          </mesh>
+        ))}
+        {sideStuds.map(([x, y], k) => (
+          <mesh key={`s${k}`} position={[x, y, sz * 10 + 2]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[6, 6, 4, 20]} />
+            <meshStandardMaterial ref={(material) => { if (material) materials.current[studs.length + k + 1] = material; }} color={color} transparent opacity={1} depthWrite roughness={0.45} />
           </mesh>
         ))}
       </group>

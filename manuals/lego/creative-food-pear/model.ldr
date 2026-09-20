@@ -1,0 +1,76 @@
+0 Pear (11039 rebuild)
+0 Name: model.ldr
+0 Author: LEGO Classic 11039 Creative Food Friends (demo booklet)
+0 !RC TITLE Base plate
+0 !RC TEXT Place the lime 2x4 plate flat, long side left to right.
+1 27 0 -8 0 1 0 0 0 1 0 0 0 1 3020.dat
+0 STEP
+0 !RC TITLE Core
+0 !RC TEXT Centre a lime 2x2 brick on the plate.
+1 27 0 -32 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Back flares
+0 !RC TEXT Lime 1x2 inverted slopes on the back left and back right corners, overhanging outward.
+1 27 -40 -32 -10 0 0 -1 0 1 0 1 0 0 3665.dat
+1 27 40 -32 -10 0 0 1 0 1 0 -1 0 0 3665.dat
+0 STEP
+0 !RC TITLE Back wall
+0 !RC TEXT A lime 1x6 brick along the back row.
+1 27 0 -56 -10 1 0 0 0 1 0 0 0 1 3009.dat
+0 STEP
+0 !RC TITLE Pit mount
+0 !RC TEXT Centre a lime 1x2 side-stud brick on the front row, stud facing front.
+1 27 0 -56 10 1 0 0 0 1 0 0 0 1 86876.dat
+0 STEP
+0 !RC TITLE Front right flare
+0 !RC TEXT A lime 1x2 inverted slope on the front right corner overhanging right, with a lime 1x2 brick on top.
+1 27 40 -32 10 0 0 1 0 1 0 -1 0 0 3665.dat
+1 27 40 -56 10 1 0 0 0 1 0 0 0 1 3004.dat
+0 STEP
+0 !RC TITLE Front left flare
+0 !RC TEXT Mirror it on the front left corner.
+1 27 -40 -32 10 0 0 -1 0 1 0 1 0 0 3665.dat
+1 27 -40 -56 10 1 0 0 0 1 0 0 0 1 3004.dat
+0 STEP
+0 !RC TITLE Second core
+0 !RC TEXT Centre a lime 2x2 brick on top.
+1 27 0 -80 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 !RC TITLE Shoulders
+0 !RC TEXT A lime 2x2 slope on each side, sloping outward.
+1 27 -40 -80 0 0 0 -1 0 1 0 1 0 0 3039.dat
+1 27 40 -80 0 0 0 1 0 1 0 -1 0 0 3039.dat
+0 STEP
+0 !RC TITLE Blush
+0 !RC TEXT Press the red printed round tile onto the front side stud.
+1 4 0 -44 28 1 0 0 0 0 1 0 -1 0 72399.dat
+0 STEP
+0 !RC TITLE Brow
+0 !RC TEXT A lime 1x4 brick along the back row.
+1 27 0 -104 -10 1 0 0 0 1 0 0 0 1 3010.dat
+0 STEP
+0 !RC TITLE Smile
+0 !RC TEXT Front row: the lime printed smile brick in the middle with a lime 1x1 side-stud brick each side, studs facing front.
+1 27 0 -104 10 1 0 0 0 1 0 0 0 1 102701.dat
+1 27 -30 -104 10 1 0 0 0 1 0 0 0 1 87087.dat
+1 27 30 -104 10 1 0 0 0 1 0 0 0 1 87087.dat
+0 STEP
+0 !RC TITLE Heart eyes
+0 !RC TEXT Press a white heart-eye tile onto each side stud.
+1 15 -30 -92 28 1 0 0 0 0 1 0 -1 0 103032.dat
+1 15 30 -92 28 1 0 0 0 0 1 0 -1 0 103032.dat
+0 STEP
+0 !RC TITLE Crown
+0 !RC TEXT Two lime 2x2 slopes on top, sloping outward.
+1 27 -20 -128 0 0 0 -1 0 1 0 1 0 0 3039.dat
+1 27 20 -128 0 0 0 1 0 1 0 -1 0 0 3039.dat
+0 STEP
+0 !RC TITLE Dome
+0 !RC TEXT Centre the lime 2x2 dome brick on top.
+1 27 0 -152 0 1 0 0 0 1 0 0 0 1 3262.dat
+0 STEP
+0 !RC TITLE Stem and leaf
+0 !RC TEXT Push the reddish brown cone into the dome and top it with a bright green leaf plate.
+1 70 0 -176 0 1 0 0 0 1 0 0 0 1 59900.dat
+1 10 0 -184 0 0.7071 0 -0.7071 0 1 0 0.7071 0 0.7071 32607.dat
+0 STEP
