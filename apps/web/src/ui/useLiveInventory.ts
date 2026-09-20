@@ -75,6 +75,17 @@ export function useLiveInventory(opts: LiveInventoryOptions) {
     return () => clearTimeout(timer);
   }, [domain]);
 
+  // The frame window and overlay belong to one domain's vocabulary.
+  const domainRef = useRef(domain);
+  useEffect(() => {
+    if (domainRef.current === domain) return;
+    domainRef.current = domain;
+    windowRef.current.clear();
+    lastSeq.current = undefined;
+    clearDetections();
+    setStats({ processed: 0, skipped: 0, dropped: 0, lastUpdateAt: null, error: null, calls: 0 });
+  }, [domain]);
+
   useControlBus((msg) => {
     if (msg.type === "motion" && msg.source === sourceId) motion.current = msg.state;
   });

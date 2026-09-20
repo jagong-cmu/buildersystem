@@ -23,7 +23,8 @@ function mockVerify(seed: number, step: number): z.infer<typeof resultSchema> {
 }
 
 export async function POST(req: Request) {
-  const form = await req.formData();
+  const form = await req.formData().catch(() => null);
+  if (!form) return NextResponse.json({ error: "expected multipart form data" }, { status: 400 });
   const manualId = String(form.get("manualId") ?? "");
   const step = Number(form.get("step") ?? 0);
   const armedAt = Number(form.get("armedAt") ?? 0);
