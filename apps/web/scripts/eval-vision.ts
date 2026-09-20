@@ -1,6 +1,6 @@
 // Vision inventory eval: runs labelled images through the same prompt/schema as /api/inventory and scores them.
 //
-//   pnpm --filter web eval:vision [--domain lego] [--case <id>] [--model google/gemini-2.5-flash]
+//   pnpm --filter web eval:vision [--domain lego] [--case <id>] [--model google/gemini-3.6-flash]
 // (script = `node --env-file=.env.local` + tsx, run from apps/web)
 //
 // Layout: eval/vision/<domain>/<case>/{*.jpg|png, truth.json}

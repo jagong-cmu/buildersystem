@@ -16,7 +16,7 @@ pnpm manuals:index  # parse manuals/ → apps/web/src/generated/manuals.index.js
 
 Vision can use the AI Gateway, Google Gemini, or Anthropic directly. Set
 `GOOGLE_GENERATIVE_AI_API_KEY` and leave `VISION_MODEL` unset to default to
-`google/gemini-2.5-flash`; use `VISION_MODEL=google/gemini-2.5-pro` or an
+`google/gemini-3.6-flash`; use `VISION_MODEL=google/gemini-3.1-pro-preview` or an
 `anthropic/...` model to select a direct provider explicitly.
 
 - Web app: http://localhost:3000 — `/scan`, `/builds`, `/guide/<manualId>`, `/live`

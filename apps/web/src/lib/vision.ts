@@ -6,30 +6,25 @@ import type { z } from "zod";
 
 const defaultVisionModel = () =>
   process.env.GOOGLE_GENERATIVE_AI_API_KEY
-    ? "google/gemini-2.5-flash"
+    ? "google/gemini-3.6-flash"
     : "anthropic/claude-sonnet-5";
 
 export const VISION_MODEL = process.env.VISION_MODEL ?? defaultVisionModel();
 
 export function visionModel() {
-  const configuredModel = process.env.VISION_MODEL;
-  const modelId = configuredModel ?? defaultVisionModel();
+  const modelId = process.env.VISION_MODEL ?? defaultVisionModel();
   if (process.env.AI_GATEWAY_API_KEY) return modelId;
-  if (modelId.startsWith("google/") && process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+
+  const [configuredProvider, configuredName] = modelId.includes("/") ? modelId.split("/", 2) : [];
+  const provider = configuredProvider ?? (process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "google" : process.env.ANTHROPIC_API_KEY ? "anthropic" : undefined);
+  const name = configuredName ?? modelId;
+  if (provider === "google" && process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });
-    return google(modelId.replace(/^google\//, ""));
+    return google(name);
   }
-  if (modelId.startsWith("anthropic/") && process.env.ANTHROPIC_API_KEY) {
+  if (provider === "anthropic" && process.env.ANTHROPIC_API_KEY) {
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    return anthropic(modelId.replace(/^anthropic\//, ""));
-  }
-  if (!configuredModel && process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });
-    return google(modelId);
-  }
-  if (!configuredModel && process.env.ANTHROPIC_API_KEY) {
-    const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    return anthropic(modelId);
+    return anthropic(name);
   }
   return null;
 }
