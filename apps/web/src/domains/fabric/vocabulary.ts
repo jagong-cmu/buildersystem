@@ -9,7 +9,7 @@ export const FABRIC_PARTS: PartType[] = [
   notion("zipper", "Zipper", "nylon coil zipper with a pull tab"),
   notion("cord", "Drawstring cord", "round cord or ribbon, at least 1 m"),
   notion("elastic", "Elastic", "flat elastic band"),
-  notion("thread", "Thread", "spool of sewing thread"),
+  notion("thread", "Thread", "sewing thread, on a spool or as loose strands"),
   notion("button", "Button", "round button with holes"),
 ];
 

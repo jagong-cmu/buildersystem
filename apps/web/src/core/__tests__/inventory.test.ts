@@ -52,3 +52,12 @@ describe("Dropbox inventory aggregation", () => {
     expect(mergeFrames(frames, "different-bins")).toEqual(sumFrames(frames));
   });
 });
+
+describe("makeInventory", () => {
+  it("collapses duplicate part/color rows from a single vision response", async () => {
+    const { makeInventory } = await import("../inventory");
+    const inv = makeInventory("lego", [item("lego:3001", 2, 0.8, "red"), item("lego:3001", 3, 0.6, "red"), item("lego:3001", 1, 0.9, "blue")], "glasses");
+    expect(inv.items.map((it) => `${it.partType}|${it.color}`)).toEqual(["lego:3001|red", "lego:3001|blue"]);
+    expect(inv.items[0].qty).toBe(3);
+  });
+});

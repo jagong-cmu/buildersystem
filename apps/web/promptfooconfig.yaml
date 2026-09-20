@@ -6,18 +6,24 @@ description: Inventory vision eval (eval/vision)
 
 prompts:
   - file://scripts/promptfoo/prompts.ts:baseline
-  - file://scripts/promptfoo/prompts.ts:colorsAndPlates
-  - file://scripts/promptfoo/prompts.ts:countCarefully
+  - file://scripts/promptfoo/prompts.ts:twoPass
+  - file://scripts/promptfoo/prompts.ts:perColorPlates
 
 providers:
   - id: file://scripts/promptfoo/provider.ts
-    label: gemini-3.6-flash
+    label: gemini-3.8-flash
     config:
-      model: google/gemini-3.6-flash
+      model: google/gemini-3.8-flash
   - id: file://scripts/promptfoo/provider.ts
-    label: gemini-3.1-pro-preview
+    label: gemini-3.7-flash
     config:
-      model: google/gemini-3.1-pro-preview
+      model: google/gemini-3.7-flash
+  - id: file://scripts/promptfoo/provider.ts
+    label: gemini-3.5-flash-lite
+    config:
+      model: google/gemini-3.5-flash-lite
+  # Free-tier quota: gemini-3.1-pro-preview has none (limit 0) and gemini-3.6-flash is capped at
+  # 20 requests/day; add them back with a billed key.
 
 tests: file://scripts/promptfoo/cases.ts
 
@@ -26,7 +32,9 @@ defaultTest:
     - type: javascript
       value: file://scripts/promptfoo/assert.ts
 
+# Free tier is 20 requests/min per model: serialize and pace calls.
 evaluateOptions:
-  maxConcurrency: 2
+  maxConcurrency: 1
+  delay: 3500
 
 outputPath: ../../eval/vision/results-promptfoo.json
