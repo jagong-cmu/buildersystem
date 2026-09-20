@@ -3,7 +3,7 @@
 // wearer looks at the pile. Scan 10 s / Snap / Upload stay as secondary actions.
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Inventory } from "@/core/types";
+import type { Inventory, PartType } from "@/core/types";
 import { useDomain, useInventory } from "@/lib/inventory-store";
 import { useDetections, recordDetections } from "@/lib/detections";
 import { coverageHint } from "@/lib/live-inventory";
@@ -17,7 +17,7 @@ import { ScanControls } from "./ScanControls";
 import { ScrapMeasure } from "./ScrapMeasure";
 import { useLiveInventory } from "./useLiveInventory";
 
-export function ScanView() {
+export function ScanView({ extraParts = [] }: { extraParts?: PartType[] }) {
   const [domain] = useDomain();
   const [inventory, setInventory] = useInventory(domain);
   const [sourceId, setSourceId] = useState("");
@@ -118,7 +118,7 @@ export function ScanView() {
             </Link>
           </div>
         </div>
-        <InventoryEditor domain={domain} inventory={inventory} onChange={edit} />
+        <InventoryEditor domain={domain} inventory={inventory} onChange={edit} extraParts={extraParts} />
       </section>
     </div>
   );
