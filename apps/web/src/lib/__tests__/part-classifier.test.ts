@@ -4,20 +4,21 @@ import { candidatesFor, resolvePart, variantGroup } from "../part-classifier";
 
 describe("candidatesFor", () => {
   const cands = candidatesFor(BREADBOARD_PARTS);
-  it("collapses resistor values onto one label", () => {
+  it("collapses resistor values and LED colours onto one label each", () => {
     expect(cands.filter((c) => c.id.startsWith("bb:resistor")).map((c) => c.id)).toEqual(["bb:resistor"]);
+    expect(cands.filter((c) => c.id.startsWith("bb:led")).map((c) => c.id)).toEqual(["bb:led", "bb:led_rgb"]);
   });
-  it("keeps one prompt-style label per remaining part, without parenthetical suffixes", () => {
-    const led = cands.find((c) => c.id === "bb:led_red");
-    expect(led?.label).toBe("a photo of a led");
-    expect(cands.find((c) => c.id === "bb:uno")?.label).toBe("a photo of a arduino uno");
+  it("uses one descriptive prompt per part", () => {
+    expect(cands.find((c) => c.id === "bb:uno")?.label).toBe("a photo of an Arduino Uno microcontroller board");
     expect(new Set(cands.map((c) => c.id)).size).toBe(cands.length);
+    expect(new Set(cands.map((c) => c.label)).size).toBe(cands.length);
   });
 });
 
 describe("resolvePart", () => {
   it("keeps the vision label inside a look-alike group", () => {
     expect(resolvePart("bb:resistor", "bb:resistor_220", BREADBOARD_PARTS)).toBe("bb:resistor_220");
+    expect(resolvePart("bb:led", "bb:led_green", BREADBOARD_PARTS)).toBe("bb:led_green");
   });
   it("takes the classifier pick when it names a concrete part", () => {
     expect(resolvePart("bb:buzzer_active", "bb:tilt_switch", BREADBOARD_PARTS)).toBe("bb:buzzer_active");
@@ -26,6 +27,7 @@ describe("resolvePart", () => {
     expect(resolvePart("bb:resistor", "bb:diode_1n4007", BREADBOARD_PARTS)).toBe("bb:resistor_10");
   });
   it("variantGroup is the identity for ungrouped ids", () => {
-    expect(variantGroup("bb:led_red")).toBe("bb:led_red");
+    expect(variantGroup("bb:led_rgb")).toBe("bb:led_rgb");
+    expect(variantGroup("bb:led_red")).toBe("bb:led");
   });
 });
