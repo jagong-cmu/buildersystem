@@ -6,7 +6,7 @@ export const parsedStepSchema = z.object({
   n: z.number().int().positive().optional(),
   text: z.string(),
   partsUsed: z.array(z.object({ name: z.string(), qty: z.number().positive() })),
-  region: z.object({ page: z.number().int().positive(), bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]) }),
+  region: z.object({ page: z.number().int().positive(), bbox: z.array(z.number()).length(4) }),
   cautions: z.array(z.string()).optional(),
   confidence: z.number().min(0).max(1),
 });
@@ -44,5 +44,5 @@ export async function parsePages(pages: Uint8Array[], opts: { pageOffset?: numbe
 }
 
 export function placement(step: ParsedStep): PagePlacement {
-  return { kind: "page", page: step.region.page, bbox: step.region.bbox };
+  return { kind: "page", page: step.region.page, bbox: step.region.bbox as [number, number, number, number] };
 }

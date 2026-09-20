@@ -7,7 +7,7 @@ export const documentStepSchema = z.object({
   n: z.number().int().positive().optional(),
   text: z.string(),
   partsUsed: z.array(z.object({ name: z.string(), qty: z.number().positive() })),
-  region: z.object({ page: z.number().int().positive(), bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]) }),
+  region: z.object({ page: z.number().int().positive(), bbox: z.array(z.number()).length(4) }),
   cautions: z.array(z.string()).optional(),
   confidence: z.number().min(0).max(1),
 });
@@ -44,7 +44,7 @@ export function buildDocumentManual(input: {
   const mappingByName = new Map(input.mappings.map((mapping) => [mapping.name.toLowerCase(), mapping]));
   const parts: PartInstance<PagePlacement>[] = [];
   const steps: Step<PagePlacement>[] = input.steps.map((step, index) => {
-    const placement: PagePlacement = { kind: "page", page: step.region.page, bbox: step.region.bbox };
+    const placement: PagePlacement = { kind: "page", page: step.region.page, bbox: step.region.bbox as [number, number, number, number] };
     const added: PartInstance<PagePlacement>[] = [];
     for (const used of step.partsUsed) {
       const mapping = mappingByName.get(used.name.toLowerCase()) ?? { name: used.name, partTypeId: `ext:${used.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`, confidence: 0 };
