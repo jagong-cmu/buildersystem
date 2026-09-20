@@ -46,6 +46,9 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
+      sharp:
+        specifier: 0.34.5
+        version: 0.34.5
       three:
         specifier: ^0.186.0
         version: 0.186.0

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateFrames } from "../inventory";
+import { aggregateFrames, mergeFrames, sumFrames } from "../inventory";
 import type { InventoryItem } from "../types";
 
 const item = (partType: string, qty: number, conf: number, color?: string, bbox?: [number, number, number, number]): InventoryItem => ({
@@ -41,6 +41,15 @@ describe("aggregateFrames", () => {
 
   it("returns an empty list for empty input", () => {
     expect(aggregateFrames([])).toEqual([]);
+  });
+});
+
+describe("Dropbox inventory aggregation", () => {
+  it("sums different bins while aggregateFrames takes the maximum", () => {
+    const frames = [[item("A", 2, 0.8, undefined, [1, 1, 2, 2])], [item("A", 5, 0.6, undefined, [3, 3, 4, 4])]];
+    expect(sumFrames(frames)).toEqual([item("A", 7, 0.7, undefined, [3, 3, 4, 4])]);
+    expect(mergeFrames(frames, "same-pile")).toEqual(aggregateFrames(frames));
+    expect(mergeFrames(frames, "different-bins")).toEqual(sumFrames(frames));
   });
 });
 

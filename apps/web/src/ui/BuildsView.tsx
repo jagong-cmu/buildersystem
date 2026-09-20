@@ -33,6 +33,7 @@ export function BuildsView({ manuals }: { manuals: Manual[] }) {
     <div className="max-w-6xl mx-auto p-5 space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-semibold">Possible builds · {DOMAIN_LABEL[domain]}</h1>
+        {inventory.dropbox && <span className="chip info">inventory from Dropbox · {inventory.dropbox.sources.length} photos · updated {new Date(inventory.dropbox.updatedAt).toLocaleDateString()}</span>}
         <span className="muted text-sm">
           from {total} scanned parts ·{" "}
           <Link href="/scan" className="underline">

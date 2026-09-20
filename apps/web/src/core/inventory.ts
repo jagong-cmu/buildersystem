@@ -84,6 +84,34 @@ export function aggregateFrames(frames: InventoryItem[][]): InventoryItem[] {
   return [...best.values()].map(({ n, confSum, ...it }) => ({ ...it, conf: confSum / n }));
 }
 
+export function sumFrames(frames: InventoryItem[][]): InventoryItem[] {
+  const totals = new Map<string, InventoryItem & { n: number; confSum: number }>();
+  for (const items of frames)
+    for (const it of items) {
+      const k = `${it.partType}|${it.color ?? ""}`;
+      const cur = totals.get(k);
+      if (!cur) totals.set(k, { ...it, n: 1, confSum: it.conf });
+      else {
+        cur.qty += it.qty;
+        cur.n++;
+        cur.confSum += it.conf;
+        if (it.bbox === undefined) delete cur.bbox;
+        else cur.bbox = it.bbox;
+        if (it.boxes === undefined) delete cur.boxes;
+        else cur.boxes = it.boxes;
+        if (it.polygonMm === undefined) delete cur.polygonMm;
+        else cur.polygonMm = it.polygonMm;
+        if (it.attrs === undefined) delete cur.attrs;
+        else cur.attrs = it.attrs;
+      }
+    }
+  return [...totals.values()].map(({ n, confSum, ...it }) => ({ ...it, conf: confSum / n }));
+}
+
+export function mergeFrames(frames: InventoryItem[][], mode: "same-pile" | "different-bins"): InventoryItem[] {
+  return mode === "different-bins" ? sumFrames(frames) : aggregateFrames(frames);
+}
+
 export function makeInventory(domain: DomainId, items: InventoryItem[], sourceId: string, frameSeqs: number[] = []): Inventory {
   return { domain, items: aggregateFrames([items]), capturedAt: new Date().toISOString(), sourceId, frameSeqs };
 }
